@@ -4,6 +4,7 @@ Tracking system for job applications and email communications.
 import logging
 from typing import Optional, List, Dict
 from datetime import datetime, timedelta
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models import (
     JobApplication, EmailRecord, ResponseRecord, JobStatus, 
@@ -211,26 +212,110 @@ class ApplicationTracker:
             # Check if enough time has passed
             if last_email.sent_at and last_email.sent_at < cutoff_date:
                 # Count existing follow-ups
-                follow_up_count = self.session.query(EmailRecord).filter_by(
+                # IMPORTANT: EmailRecord is one row per recipient, so we must NOT count rows
+                # (multi-recruiter applications would inflate counts and skip numbers).
+                # Instead, treat follow-ups as the max follow_up_number we've successfully sent.
+                last_follow_up_number = self.session.query(func.max(EmailRecord.follow_up_number)).filter_by(
                     job_application_id=app.id,
                     is_follow_up=True,
                     status=EmailStatus.SENT
-                ).count()
+                ).scalar() or 0
                 
-                if follow_up_count < Config.MAX_FOLLOW_UPS:
+                if last_follow_up_number < Config.MAX_FOLLOW_UPS:
                     needing_follow_up.append(app)
         
         return needing_follow_up
     
     def get_next_follow_up_number(self, job_application_id: int) -> int:
         """Get the next follow-up number for a job application."""
-        count = self.session.query(EmailRecord).filter_by(
+        # EmailRecord is stored per-recipient, so counting rows breaks when an application
+        # has multiple recruiters (e.g., 2 recipients => follow_up #1 creates 2 rows,
+        # and the next computed number incorrectly becomes 3).
+        last_follow_up_number = self.session.query(func.max(EmailRecord.follow_up_number)).filter_by(
             job_application_id=job_application_id,
             is_follow_up=True,
             status=EmailStatus.SENT
-        ).count()
+        ).scalar() or 0
         
-        return count + 1
+        return int(last_follow_up_number) + 1
+
+    def repair_follow_up_numbers(self, dry_run: bool = True) -> Dict[str, int]:
+        """
+        Repair follow-up numbering for multi-recruiter applications.
+
+        Historical bug: follow-up numbers were computed using a row-count. Since we store
+        one EmailRecord per recipient, apps with multiple recruiters could skip numbers
+        (e.g. two recipients => follow_up #1 created two rows => next computed as #3).
+
+        This repair renumbers follow-up "waves" per application so they become sequential
+        again (1..N), preserving chronological order by sent_at.
+
+        Args:
+            dry_run: If True, do not write changes; just report what would change.
+
+        Returns:
+            Dict with counts: applications_scanned, applications_changed, rows_updated.
+        """
+        stats = {"applications_scanned": 0, "applications_changed": 0, "rows_updated": 0}
+
+        app_ids = [
+            row[0]
+            for row in self.session.query(EmailRecord.job_application_id)
+            .filter_by(is_follow_up=True, status=EmailStatus.SENT)
+            .distinct()
+            .all()
+        ]
+
+        for app_id in app_ids:
+            stats["applications_scanned"] += 1
+
+            # Distinct follow-up numbers ordered by the first time they were sent.
+            waves = (
+                self.session.query(
+                    EmailRecord.follow_up_number,
+                    func.min(EmailRecord.sent_at).label("first_sent_at"),
+                )
+                .filter_by(job_application_id=app_id, is_follow_up=True, status=EmailStatus.SENT)
+                .filter(EmailRecord.follow_up_number > 0)
+                .group_by(EmailRecord.follow_up_number)
+                .order_by(func.min(EmailRecord.sent_at).asc())
+                .all()
+            )
+
+            existing_numbers = [w.follow_up_number for w in waves]
+            if not existing_numbers:
+                continue
+
+            desired_numbers = list(range(1, len(existing_numbers) + 1))
+            if existing_numbers == desired_numbers:
+                continue
+
+            mapping = {old: new for old, new in zip(existing_numbers, desired_numbers)}
+            logger.warning(
+                f"Repairing follow-up numbers for job_application_id={app_id}: {mapping} (dry_run={dry_run})"
+            )
+            stats["applications_changed"] += 1
+
+            for old_num, new_num in mapping.items():
+                if old_num == new_num:
+                    continue
+                q = (
+                    self.session.query(EmailRecord)
+                    .filter_by(job_application_id=app_id, is_follow_up=True, status=EmailStatus.SENT)
+                    .filter(EmailRecord.follow_up_number == old_num)
+                )
+                if dry_run:
+                    stats["rows_updated"] += q.count()
+                else:
+                    stats["rows_updated"] += q.update(
+                        {EmailRecord.follow_up_number: new_num},
+                        synchronize_session=False,
+                    )
+
+        if not dry_run:
+            self.session.commit()
+
+        return stats
     
     def update_job_status(
         self,

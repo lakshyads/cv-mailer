@@ -176,7 +176,7 @@ class GmailSender:
         # Add body
         message.attach(MIMEText(body, 'html'))
         
-        # Add resume attachment or drive link
+        # Add resume attachment if available
         if resume_path and Path(resume_path).exists():
             with open(resume_path, "rb") as attachment:
                 part = MIMEBase('application', 'octet-stream')
@@ -191,7 +191,8 @@ class GmailSender:
             message.attach(part)
             logger.info(f"Attached resume file: {resume_path}")
         
-        elif resume_drive_link:
+        # Add resume drive link if available
+        if resume_drive_link:
             # Add drive link to body if not already included
             if resume_drive_link not in body:
                 drive_link_html = f'<p><a href="{resume_drive_link}">View my resume on Google Drive</a></p>'

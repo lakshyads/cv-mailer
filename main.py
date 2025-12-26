@@ -511,6 +511,11 @@ def main():
         help='Show statistics'
     )
     parser.add_argument(
+        '--repair-followups',
+        action='store_true',
+        help='Repair historical follow-up numbering issues in the local DB (use --dry-run to preview)'
+    )
+    parser.add_argument(
         '--new',
         action='store_true',
         help='Process new applications only (default)'
@@ -529,6 +534,21 @@ def main():
         
         if args.stats:
             mailer.show_statistics()
+        elif args.repair_followups:
+            console.print("\n[bold]Repairing follow-up numbering...[/bold]")
+            stats = mailer.tracker.repair_follow_up_numbers(dry_run=args.dry_run)
+            if args.dry_run:
+                console.print(
+                    f"[yellow]DRY RUN:[/yellow] scanned={stats['applications_scanned']}, "
+                    f"would_change={stats['applications_changed']}, "
+                    f"would_update_rows={stats['rows_updated']}"
+                )
+            else:
+                console.print(
+                    f"[green]✓[/green] Repair complete: scanned={stats['applications_scanned']}, "
+                    f"changed={stats['applications_changed']}, "
+                    f"updated_rows={stats['rows_updated']}"
+                )
         elif args.follow_ups:
             mailer.send_follow_ups(dry_run=args.dry_run)
         else:
