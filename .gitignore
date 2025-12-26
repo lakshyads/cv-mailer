@@ -1,0 +1,42 @@
+# Environment
+.env
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Google Credentials
+credentials.json
+token.json
+token.pickle
+gmail_token.pickle
+
+# Database
+*.db
+*.sqlite
+*.sqlite3# SQLite
+*.db-wal
+*.db-shm
+
+
+# Resume files
+*.pdf
+*.doc
+*.docx
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
