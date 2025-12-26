@@ -5,13 +5,14 @@ import logging
 import base64
 import time
 import random
+import mimetypes
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 from pathlib import Path
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -117,7 +118,7 @@ class GmailSender:
         for attempt in range(max_retries):
             session = get_session()
             try:
-                today = datetime.utcnow().date()
+                today = datetime.now(timezone.utc).date()
                 today_start = datetime.combine(today, datetime.min.time())
                 
                 stats = session.query(DailyEmailStats).filter(
@@ -125,11 +126,11 @@ class GmailSender:
                 ).first()
                 
                 if not stats:
-                    stats = DailyEmailStats(date=datetime.utcnow(), emails_sent=0)
+                    stats = DailyEmailStats(date=datetime.now(timezone.utc), emails_sent=0)
                     session.add(stats)
                 
                 stats.emails_sent += 1
-                stats.last_email_sent_at = datetime.utcnow()
+                stats.last_email_sent_at = datetime.now(timezone.utc)
                 session.commit()
                 return  # Success, exit the retry loop
                 
@@ -168,41 +169,46 @@ class GmailSender:
         resume_drive_link: Optional[str] = None
     ) -> dict:
         """Create email message with optional resume attachment."""
+        body_with_link = body
+        if resume_drive_link and resume_drive_link not in body_with_link:
+            drive_link_html = (
+                f'<p style="margin-top: 16px;">'
+                f'<strong>Resume (Google Drive):</strong> '
+                f'<a href="{resume_drive_link}">Lakshya_Dev_Singh_Resume.pdf</a>'
+                f'</p>'
+            )
+            # Prefer injecting before closing tags to keep HTML valid-ish.
+            if "</div>" in body_with_link:
+                body_with_link = body_with_link.replace("</div>", f"{drive_link_html}</div>", 1)
+            elif "</body>" in body_with_link:
+                body_with_link = body_with_link.replace("</body>", f"{drive_link_html}</body>", 1)
+            else:
+                body_with_link = body_with_link + drive_link_html
+            logger.info("Added resume drive link to email")
+
         message = MIMEMultipart()
-        message['to'] = to
-        message['from'] = f"{Config.SENDER_NAME} <{Config.GMAIL_USER}>"
-        message['subject'] = subject
-        
-        # Add body
-        message.attach(MIMEText(body, 'html'))
-        
+        message["to"] = to
+        message["from"] = f"{Config.SENDER_NAME} <{Config.GMAIL_USER}>"
+        message["subject"] = subject
+        message.attach(MIMEText(body_with_link, "html"))
+
         # Add resume attachment if available
         if resume_path and Path(resume_path).exists():
-            with open(resume_path, "rb") as attachment:
-                part = MIMEBase('application', 'octet-stream')
-                part.set_payload(attachment.read())
-            
-            encoders.encode_base64(part)
             filename = Path(resume_path).name
-            part.add_header(
-                'Content-Disposition',
-                f'attachment; filename= {filename}',
-            )
+            content_type, _ = mimetypes.guess_type(filename)
+            if content_type:
+                maintype, subtype = content_type.split("/", 1)
+            else:
+                maintype, subtype = "application", "octet-stream"
+
+            with open(resume_path, "rb") as attachment:
+                part = MIMEBase(maintype, subtype)
+                part.set_payload(attachment.read())
+
+            encoders.encode_base64(part)
+            part.add_header("Content-Disposition", "attachment", filename=filename)
             message.attach(part)
             logger.info(f"Attached resume file: {resume_path}")
-        
-        # Add resume drive link if available
-        if resume_drive_link:
-            # Add drive link to body if not already included
-            if resume_drive_link not in body:
-                drive_link_html = f'<p><a href="{resume_drive_link}">View my resume on Google Drive</a></p>'
-                body_with_link = body + drive_link_html
-                message = MIMEMultipart()
-                message['to'] = to
-                message['from'] = f"{Config.SENDER_NAME} <{Config.GMAIL_USER}>"
-                message['subject'] = subject
-                message.attach(MIMEText(body_with_link, 'html'))
-            logger.info(f"Added resume drive link to email")
         
         raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
         return {'raw': raw_message}

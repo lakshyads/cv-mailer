@@ -96,17 +96,17 @@ pip install -r requirements.txt
    WORKSHEET_NAME=Sheet1
    GMAIL_USER=your_email@gmail.com
    SENDER_NAME=Your Name
+   # Recommended: set BOTH (attach the file + include a Drive link in the email)
    RESUME_FILE_PATH=./resume.pdf
-   # OR
    RESUME_DRIVE_LINK=https://drive.google.com/file/d/...
    ```
 
 ### 5. Resume Setup
 
-You can either:
+You can set either (minimum) or both (recommended):
 
-- Place your resume PDF in the project directory and set `RESUME_FILE_PATH`
-- Upload to Google Drive and set `RESUME_DRIVE_LINK` (make sure it's shareable)
+- **Attachment**: Place your resume PDF in the project directory and set `RESUME_FILE_PATH`
+- **Drive link**: Upload to Google Drive and set `RESUME_DRIVE_LINK` (make sure it's shareable)
 
 ## Usage
 

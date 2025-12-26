@@ -104,9 +104,9 @@ SHEET_NAME_FILTER=
 GMAIL_USER=your_email@gmail.com
 SENDER_NAME=Your Name
 
-# Resume Configuration (choose one)
+# Resume Configuration
+# Recommended: set BOTH (attach the file + include a Drive link in the email)
 RESUME_FILE_PATH=./resume.pdf
-# OR
 RESUME_DRIVE_LINK=
 
 # Email Rate Limiting (seconds between emails)
@@ -143,11 +143,11 @@ LOG_FILE=cv_mailer.log
 
 ### Resume Setup
 
-**Option 1: Local File**
+**Option 1: Local File (Attachment)**
 
 - Place your resume PDF in the project root
 - Set `RESUME_FILE_PATH=./resume.pdf` (or your filename)
-- Leave `RESUME_DRIVE_LINK` empty
+- Optionally also set `RESUME_DRIVE_LINK` (recommended)
 
 **Option 2: Google Drive Link**
 
@@ -155,7 +155,7 @@ LOG_FILE=cv_mailer.log
 - Right-click > Get link > Make it accessible to "Anyone with the link"
 - Copy the link
 - Set `RESUME_DRIVE_LINK=https://drive.google.com/file/d/...`
-- Leave `RESUME_FILE_PATH` empty
+- Optionally also set `RESUME_FILE_PATH` to attach the resume (recommended)
 
 ## Step 4: Initialize Database
 
