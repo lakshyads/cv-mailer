@@ -64,8 +64,8 @@ class GmailSender:
     
     def _check_rate_limit(self, max_retries: int = 3) -> bool:
         """
-        Check if we can send an email based on rate limits.
-        Returns True if we can send, False otherwise.
+        Check if we can send an email based on daily email limits.
+        Returns True if we can send, False if daily limit reached.
         """
         from sqlalchemy.exc import OperationalError
         
@@ -84,15 +84,6 @@ class GmailSender:
                     if stats.emails_sent >= Config.DAILY_EMAIL_LIMIT:
                         logger.warning(f"Daily email limit reached: {stats.emails_sent}/{Config.DAILY_EMAIL_LIMIT}")
                         return False
-                    
-                    # Check minimum delay between emails
-                    if stats.last_email_sent_at:
-                        time_since_last = (datetime.utcnow() - stats.last_email_sent_at).total_seconds()
-                        min_delay = Config.EMAIL_DELAY_MIN
-                        if time_since_last < min_delay:
-                            wait_time = min_delay - time_since_last
-                            logger.info(f"Rate limiting: waiting {wait_time:.1f} seconds")
-                            time.sleep(wait_time)
                 else:
                     # Create new stats record (don't commit yet, just prepare)
                     stats = DailyEmailStats(date=datetime.utcnow(), emails_sent=0)
@@ -236,15 +227,16 @@ class GmailSender:
         Returns:
             Gmail message ID if successful, None otherwise
         """
-        # Check rate limits
+        # Check daily email limits
         if not self._check_rate_limit():
-            logger.warning("Cannot send email: rate limit reached")
+            logger.warning("Cannot send email: daily rate limit reached")
             return None
         
         try:
-            # Add random delay to avoid detection
+            # Add random delay between emails (100-500ms to avoid detection)
             delay = random.uniform(Config.EMAIL_DELAY_MIN, Config.EMAIL_DELAY_MAX)
-            time.sleep(delay)
+            if delay > 0:
+                time.sleep(delay)
             
             # Create message
             message = self._create_message(

@@ -86,13 +86,9 @@ pip install -r requirements.txt
 
 ## Step 3: Configure Environment Variables
 
-1. Copy the example environment file:
+1. Create a `.env` file in the project root (this file is gitignored) and add your settings.
 
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edit `.env` file with your settings:
+2. Example `.env` file:
 
 ```env
 # Google API Credentials (already downloaded)
@@ -114,8 +110,9 @@ RESUME_FILE_PATH=./resume.pdf
 RESUME_DRIVE_LINK=
 
 # Email Rate Limiting (seconds between emails)
-EMAIL_DELAY_MIN=60
-EMAIL_DELAY_MAX=120
+# Recommended safe sending pattern: 100–500ms between sends
+EMAIL_DELAY_MIN=0.1
+EMAIL_DELAY_MAX=0.5
 
 # Daily Email Limit (Gmail free: ~500/day, Workspace: ~2000/day)
 DAILY_EMAIL_LIMIT=50

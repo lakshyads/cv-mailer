@@ -30,8 +30,10 @@ class Config:
     RESUME_DRIVE_LINK: Optional[str] = os.getenv("RESUME_DRIVE_LINK")
     
     # Rate Limiting
-    EMAIL_DELAY_MIN: int = int(os.getenv("EMAIL_DELAY_MIN", "60"))
-    EMAIL_DELAY_MAX: int = int(os.getenv("EMAIL_DELAY_MAX", "120"))
+    # Delay between emails in seconds (100-500ms = 0.1-0.5 seconds)
+    # This allows ~180 emails/minute, well under Gmail API per-user quota
+    EMAIL_DELAY_MIN: float = float(os.getenv("EMAIL_DELAY_MIN", "0.1"))
+    EMAIL_DELAY_MAX: float = float(os.getenv("EMAIL_DELAY_MAX", "0.5"))
     DAILY_EMAIL_LIMIT: int = int(os.getenv("DAILY_EMAIL_LIMIT", "50"))
     
     # Follow-up
