@@ -104,6 +104,10 @@ SHEET_NAME_FILTER=
 GMAIL_USER=your_email@gmail.com
 SENDER_NAME=Your Name
 
+# Optional: signature fields used in templates
+LINKEDIN_PROFILE=https://www.linkedin.com/in/your-handle
+CONTACT_INFORMATION=your_email@gmail.com | +971 5X XXX XXXX
+
 # Resume Configuration
 # Recommended: set BOTH (attach the file + include a Drive link in the email)
 RESUME_FILE_PATH=./resume.pdf
