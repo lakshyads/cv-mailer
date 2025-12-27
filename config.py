@@ -24,6 +24,10 @@ class Config:
     # Gmail
     GMAIL_USER: str = os.getenv("GMAIL_USER", "")
     SENDER_NAME: str = os.getenv("SENDER_NAME", "Job Applicant")
+
+    # Signature / contact (optional; used by email templates)
+    LINKEDIN_PROFILE: str = os.getenv("LINKEDIN_PROFILE", "")
+    CONTACT_INFORMATION: str = os.getenv("CONTACT_INFORMATION", "")
     
     # Resume
     RESUME_FILE_PATH: Optional[str] = os.getenv("RESUME_FILE_PATH")

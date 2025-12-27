@@ -73,7 +73,7 @@ class GmailSender:
         for attempt in range(max_retries):
             session = get_session()
             try:
-                today = datetime.utcnow().date()
+                today = datetime.now(timezone.utc).date()
                 today_start = datetime.combine(today, datetime.min.time())
                 
                 # Get today's stats
@@ -87,7 +87,7 @@ class GmailSender:
                         return False
                 else:
                     # Create new stats record (don't commit yet, just prepare)
-                    stats = DailyEmailStats(date=datetime.utcnow(), emails_sent=0)
+                    stats = DailyEmailStats(date=datetime.now(timezone.utc), emails_sent=0)
                     session.add(stats)
                     session.flush()  # Flush to get ID but don't commit yet
                 

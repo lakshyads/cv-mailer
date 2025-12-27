@@ -9,66 +9,101 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-
 class EmailTemplate:
     """Email template manager."""
     
+    FIRST_CONTACT_SUBJECT = "Application: {{ position }} - {{ company_name }}"
+    
     FIRST_CONTACT_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <p>Dear {{ recruiter_name or 'Hiring Manager' }},</p>
-        
-        <p>I hope this email finds you well. I am writing to express my interest in the <strong>{{ position }}</strong> position at <strong>{{ company_name }}</strong>{% if location %} ({{ location }}){% endif %}.</p>
-        
-        {% if job_posting_url %}
-        <p>I came across this opportunity{% if job_posting_url %} <a href="{{ job_posting_url }}">here</a>{% endif %} and I am excited about the possibility of contributing to your team.</p>
-        {% endif %}
-        
-        {% if custom_message %}
-        <p>{{ custom_message }}</p>
-        {% else %}
-        <p>With my background and experience, I believe I would be a valuable addition to {{ company_name }}. I have attached my resume for your review, and I would welcome the opportunity to discuss how my skills and experience align with your needs.</p>
-        {% endif %}
-        
-        <p>Thank you for considering my application. I look forward to hearing from you.</p>
-        
-        <p>Best regards,<br>
-        {{ sender_name }}</p>
-    </div>
-</body>
-</html>
-"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <p>Hi {{ recruiter_name or 'Hiring Manager' }},</p>
+                
+                <p>
+                    I’m reaching out regarding the <strong>{{ position }}</strong> role at 
+                    <strong>{{ company_name }}</strong>{% if location %} ({{ location }}){% endif %} 
+                    listed <a href="{{ job_posting_url }}">here</a>. 
+                    I currently lead the design and modernization of core services used at scale, 
+                    and I bring hands-on experience owning architecture, performance, 
+                    and reliability for high-traffic platforms.
+                </p>
+
+                <p>
+                    At PayPal, I’ve been leading a team of 5 engineers on core platform services, 
+                    scaling APIs to handle 125M+ requests per day 
+                    while achieving P95 latencies under 14ms. 
+                    I’ve driven system modernization initiatives, introduced multi-vendor strategies, 
+                    and improved platform reliability and cost efficiency. 
+                    Previously, I led cloud automation efforts that reduced time-to-market 
+                    for analytics workloads to under 3 days and delivered $10M+ in cloud cost savings 
+                    through provisioning and governance automation.
+                </p>
+
+                <p>
+                    I enjoy operating at the intersection of architecture, execution, and mentorship, 
+                    and I’m motivated by building systems that scale with both product growth 
+                    and engineering teams. 
+                    I’d welcome the opportunity to discuss how my experience could contribute to 
+                    {{ company_name }}’s platform and long-term technical roadmap.
+                </p>
+
+                <p>
+                    My resume is attached for your review. 
+                    Please let me know a convenient time to connect.
+                </p>
+
+                <p>
+                    Best regards,<br>
+                    {{ sender_name }}<br>
+                    {% if linkedin_profile %}{{ linkedin_profile }}<br>{% endif %}
+                    {% if contact_information %}{{ contact_information }}{% endif %}
+                </p>
+                
+            </div>
+        </body>
+        </html>
+    """
+
+    FOLLOW_UP_SUBJECT = "Following up: {{ position }} - {{ company_name }}"
     
     FOLLOW_UP_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <p>Dear {{ recruiter_name or 'Hiring Manager' }},</p>
-        
-        <p>I wanted to follow up on my previous email regarding the <strong>{{ position }}</strong> position at <strong>{{ company_name }}</strong>{% if location %} ({{ location }}){% endif %}.</p>
-        
-        <p>I remain very interested in this opportunity and would appreciate any updates on the status of my application. I am happy to provide any additional information that might be helpful in your evaluation process.</p>
-        
-        <p>Thank you for your time and consideration.</p>
-        
-        <p>Best regards,<br>
-        {{ sender_name }}</p>
-    </div>
-</body>
-</html>
-"""
-    
-    FIRST_CONTACT_SUBJECT = "Application for {{ position }} Position at {{ company_name }}"
-    FOLLOW_UP_SUBJECT = "Follow-up: Application for {{ position }} Position at {{ company_name }}"
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <p>Hi {{ recruiter_name or 'Hiring Manager' }},</p>
+                
+                <p>
+                    I wanted to follow up on my application for the 
+                    <strong>{{ position }}</strong> position at <strong>{{ company_name }}</strong>
+                    {% if location %} ({{ location }}){% endif %}.  
+                    I remain very interested in the opportunity 
+                    and would welcome any updates you can share.
+                </p>
+                
+                <p>
+                    Please let me know if there’s anything else you need from me. 
+                    Looking forward to your response.
+                </p>
+                
+                <p>
+                    Best regards,<br>
+                    {{ sender_name }}<br>
+                    {% if linkedin_profile %}{{ linkedin_profile }}<br>{% endif %}
+                    {% if contact_information %}{{ contact_information }}{% endif %}
+                </p>
+            </div>
+        </body>
+        </html>
+    """
     
     @classmethod
     def render_first_contact(
@@ -99,7 +134,9 @@ class EmailTemplate:
             'location': location,
             'job_posting_url': job_posting_url,
             'custom_message': custom_message,
-            'sender_name': Config.SENDER_NAME
+            'sender_name': Config.SENDER_NAME,
+            'linkedin_profile': getattr(Config, "LINKEDIN_PROFILE", None),
+            'contact_information': getattr(Config, "CONTACT_INFORMATION", None)
         }
         
         subject = subject_template.render(**context)
@@ -130,7 +167,9 @@ class EmailTemplate:
             'company_name': company_name,
             'position': position,
             'location': location,
-            'sender_name': Config.SENDER_NAME
+            'sender_name': Config.SENDER_NAME,
+            'linkedin_profile': getattr(Config, "LINKEDIN_PROFILE", None),
+            'contact_information': getattr(Config, "CONTACT_INFORMATION", None)
         }
         
         subject = subject_template.render(**context)

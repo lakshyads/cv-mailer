@@ -72,20 +72,27 @@ class CVMailer:
             Number of emails sent
         """
         console.print("\n[bold]Processing new job applications...[/bold]")
+        logger.info("============================")
+        logger.info("Process new job applications")
+        logger.info("============================")
         
         try:
             # Read data from Google Sheets
             if Config.PROCESS_ALL_SHEETS:
                 rows = self.sheets_client.read_all_sheets(sheet_filter=Config.SHEET_NAME_FILTER)
+                logger.info(f"Processing all sheets (filter: {Config.SHEET_NAME_FILTER or 'none'})")
                 console.print(f"[cyan]Processing all sheets (filter: {Config.SHEET_NAME_FILTER or 'none'})[/cyan]")
             else:
                 rows = self.sheets_client.read_all_rows()
+                logger.info(f"Processing single sheet: {Config.WORKSHEET_NAME}")
                 console.print(f"[cyan]Processing single sheet: {Config.WORKSHEET_NAME}[/cyan]")
             
             if not rows:
+                logger.info("No data found in Google Sheets")
                 console.print("[yellow]No data found in Google Sheets[/yellow]")
                 return 0
             
+            logger.info(f"Found {len(rows)} total rows across all sheets")
             console.print(f"[cyan]Found {len(rows)} total rows across all sheets[/cyan]")
             
             sent_count = 0
@@ -268,7 +275,8 @@ class CVMailer:
                                 
                                 emails_sent_for_row += 1
                                 sent_count += 1
-                                console.print(f"[green]✓[/green] Sent to {recruiter_name or 'N/A'} ({recruiter_email}) - {company_name}")
+                                logger.info(f"✓ Sent to {recruiter_name or 'N/A'} ({recruiter_email}) - {position} - {company_name}")
+                                console.print(f"[green]✓[/green] Sent to {recruiter_name or 'N/A'} ({recruiter_email}) - {position} - {company_name}")
                             else:
                                 # Record failure
                                 self.tracker.record_email_failed(
@@ -281,7 +289,8 @@ class CVMailer:
                                     error_message="Failed to send email"
                                 )
                                 emails_skipped_for_row += 1
-                                console.print(f"[red]✗[/red] Failed to send to {recruiter_email}")
+                                logger.info(f"✗ Failed to send to {recruiter_email} - {position} - {company_name}")
+                                console.print(f"[red]✗[/red] Failed to send to {recruiter_email} - {position} - {company_name}")
                     
                     # Update spreadsheet status only once per row (after processing all recruiters)
                     if emails_sent_for_row > 0 and not dry_run:
@@ -327,12 +336,13 @@ class CVMailer:
                         # All recruiters were skipped (already sent or failed)
                         skipped_count += 1
             
-            console.print(f"\n[bold]Summary:[/bold] {sent_count} sent, {skipped_count} skipped")
+            logger.info(f"Summary: {sent_count} sent, {skipped_count} skipped")
+            console.print(f"\n[bold]Summary:[/bold] {sent_count} sent, {skipped_count} skipped\n")
             return sent_count
             
         except Exception as e:
             logger.error(f"Error processing applications: {e}", exc_info=True)
-            console.print(f"[red]Error: {e}[/red]")
+            console.print(f"[red]Error: {e}[/red]\n")
             return 0
     
     def send_follow_ups(self, dry_run: bool = False) -> int:
@@ -345,15 +355,19 @@ class CVMailer:
         Returns:
             Number of follow-up emails sent
         """
-        console.print("\n[bold]Sending follow-up emails...[/bold]")
-        
+        console.print("[bold]Sending follow-up emails...[/bold]")
+        logger.info("=====================")
+        logger.info("Send follow-up emails")
+        logger.info("=====================")
         try:
             applications = self.tracker.get_applications_needing_follow_up()
             
             if not applications:
-                console.print("[yellow]No applications need follow-up at this time[/yellow]")
+                logger.info("No applications need follow-up at this time")
+                console.print("[yellow]No applications need follow-up at this time[/yellow]\n")
                 return 0
             
+            logger.info(f"Found {len(applications)} applications needing follow-up")
             console.print(f"[cyan]Found {len(applications)} applications needing follow-up[/cyan]")
             
             sent_count = 0
@@ -440,16 +454,19 @@ class CVMailer:
                                 follow_up_number=follow_up_number
                             )
                             sent_count += 1
-                            console.print(f"[green]✓[/green] Follow-up #{follow_up_number} sent to {recruiter['name'] or 'N/A'} ({recruiter['email']})")
+                            logger.info(f"✓ Follow-up #{follow_up_number} sent to {recruiter['name'] or 'N/A'} ({recruiter['email']}) - {app.company_name} - {app.position}")
+                            console.print(f"[green]✓[/green] Follow-up #{follow_up_number} sent to {recruiter['name'] or 'N/A'} ({recruiter['email']}) - {app.company_name} - {app.position}")
                         else:
-                            console.print(f"[red]✗[/red] Failed to send follow-up to {recruiter['email']}")
+                            logger.info(f"✗ Failed to send follow-up to {recruiter['email']} - {app.company_name} - {app.position}")
+                            console.print(f"[red]✗[/red] Failed to send follow-up to {recruiter['email']} - {app.company_name} - {app.position}")
             
-            console.print(f"\n[bold]Summary:[/bold] {sent_count} follow-ups sent")
+            logger.info(f"Summary: {sent_count} follow-ups sent")
+            console.print(f"\n[bold]Summary:[/bold] {sent_count} follow-ups sent\n")
             return sent_count
             
         except Exception as e:
             logger.error(f"Error sending follow-ups: {e}", exc_info=True)
-            console.print(f"[red]Error: {e}[/red]")
+            console.print(f"[red]Error: {e}[/red]\n") 
             return 0
     
     def show_statistics(self):

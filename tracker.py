@@ -3,7 +3,7 @@ Tracking system for job applications and email communications.
 """
 import logging
 from typing import Optional, List, Dict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models import (
@@ -143,7 +143,7 @@ class ApplicationTracker:
             gmail_message_id=gmail_message_id,
             is_follow_up=is_follow_up,
             follow_up_number=follow_up_number,
-            sent_at=datetime.utcnow() if gmail_message_id else None
+            sent_at=datetime.now(timezone.utc) if gmail_message_id else None
         )
         
         self.session.add(email_record)
@@ -151,10 +151,11 @@ class ApplicationTracker:
         # Update job application status
         if job_app.status == JobStatus.DRAFT:
             job_app.status = JobStatus.REACHED_OUT
-            job_app.applied_at = datetime.utcnow()
+            job_app.applied_at = datetime.now(timezone.utc)
         
         self.session.commit()
-        logger.info(f"Recorded email sent for job application {job_application_id}")
+        log = f"Recorded email sent for job application {job_application_id}"
+        logger.info(log)
         return email_record
     
     def record_email_failed(
@@ -189,7 +190,7 @@ class ApplicationTracker:
     
     def get_applications_needing_follow_up(self) -> List[JobApplication]:
         """Get job applications that need follow-up emails."""
-        cutoff_date = datetime.utcnow() - timedelta(days=Config.FOLLOW_UP_DAYS)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=Config.FOLLOW_UP_DAYS)
         
         applications = self.session.query(JobApplication).filter(
             JobApplication.status.in_([
@@ -210,19 +211,26 @@ class ApplicationTracker:
                 continue
             
             # Check if enough time has passed
-            if last_email.sent_at and last_email.sent_at < cutoff_date:
-                # Count existing follow-ups
-                # IMPORTANT: EmailRecord is one row per recipient, so we must NOT count rows
-                # (multi-recruiter applications would inflate counts and skip numbers).
-                # Instead, treat follow-ups as the max follow_up_number we've successfully sent.
-                last_follow_up_number = self.session.query(func.max(EmailRecord.follow_up_number)).filter_by(
-                    job_application_id=app.id,
-                    is_follow_up=True,
-                    status=EmailStatus.SENT
-                ).scalar() or 0
+            # Normalize sent_at to timezone-aware (UTC) if it's naive
+            if last_email.sent_at:
+                sent_at = last_email.sent_at
+                if sent_at.tzinfo is None:
+                    # Assume naive datetime is UTC
+                    sent_at = sent_at.replace(tzinfo=timezone.utc)
                 
-                if last_follow_up_number < Config.MAX_FOLLOW_UPS:
-                    needing_follow_up.append(app)
+                if sent_at < cutoff_date:
+                    # Count existing follow-ups
+                    # IMPORTANT: EmailRecord is one row per recipient, so we must NOT count rows
+                    # (multi-recruiter applications would inflate counts and skip numbers).
+                    # Instead, treat follow-ups as the max follow_up_number we've successfully sent.
+                    last_follow_up_number = self.session.query(func.max(EmailRecord.follow_up_number)).filter_by(
+                        job_application_id=app.id,
+                        is_follow_up=True,
+                        status=EmailStatus.SENT
+                    ).scalar() or 0
+                    
+                    if last_follow_up_number < Config.MAX_FOLLOW_UPS:
+                        needing_follow_up.append(app)
         
         return needing_follow_up
     
@@ -329,13 +337,13 @@ class ApplicationTracker:
             raise ValueError(f"Job application {job_application_id} not found")
         
         app.status = status
-        app.updated_at = datetime.utcnow()
+        app.updated_at = datetime.now(timezone.utc)
         
         if notes:
             app.notes = notes
         
         if status == JobStatus.CLOSED:
-            app.closed_at = datetime.utcnow()
+            app.closed_at = datetime.now(timezone.utc)
         elif status == JobStatus.INTERVIEW_SCHEDULED:
             app.status = JobStatus.INTERVIEW_SCHEDULED
         
@@ -355,7 +363,7 @@ class ApplicationTracker:
             email_record_id=email_record_id,
             response_type=response_type,
             response_text=response_text,
-            responded_at=datetime.utcnow()
+            responded_at=datetime.now(timezone.utc)
         )
         
         self.session.add(response)
