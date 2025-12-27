@@ -17,6 +17,15 @@ fi
 python_version=$(python3 --version 2>&1 | awk '{print $2}')
 echo "✓ Python version: $python_version"
 
+# Check Python version and warn if outdated
+python_major=$(echo $python_version | cut -d. -f1)
+python_minor=$(echo $python_version | cut -d. -f2)
+if [ "$python_major" -eq 3 ] && [ "$python_minor" -lt 10 ]; then
+    echo "⚠️  Warning: Python 3.9 and below are past end-of-life."
+    echo "   Consider upgrading to Python 3.10+ for better support."
+    echo "   (The app will still work, but you may see deprecation warnings)"
+fi
+
 # Check if we're in the right directory
 if [ ! -f "pyproject.toml" ]; then
     echo "❌ Error: pyproject.toml not found. Please run this script from the project root."

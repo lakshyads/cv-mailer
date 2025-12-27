@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=65.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,11 +8,16 @@ version = "1.0.0"
 description = "Automated system for emailing resumes to recruiters with comprehensive tracking"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "MIT"}
-authors = [
-    {name = "Lakshya Dev Singh", email = "lakshyads.96@gmail.com"}
+license = { text = "MIT" }
+authors = [{ name = "Lakshya Dev Singh", email = "lakshyads.96@gmail.com" }]
+keywords = [
+    "cv",
+    "resume",
+    "email",
+    "automation",
+    "job-application",
+    "recruitment",
 ]
-keywords = ["cv", "resume", "email", "automation", "job-application", "recruitment"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -38,6 +43,8 @@ dependencies = [
     "pytz>=2023.3",
     "colorama>=0.4.6",
     "rich>=13.7.0",
+    "urllib3<2.0.0",                                    # Pin to v1.x for LibreSSL compatibility on macOS
+    "importlib-metadata>=4.0.0; python_version<'3.10'", # Fix importlib.metadata for Python <3.10
 ]
 
 [project.optional-dependencies]
@@ -49,11 +56,7 @@ dev = [
     "mypy>=1.5.0",
     "isort>=5.12.0",
 ]
-api = [
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
-    "pydantic>=2.5.0",
-]
+api = ["fastapi>=0.104.0", "uvicorn[standard]>=0.24.0", "pydantic>=2.5.0"]
 
 [project.scripts]
 cv-mailer = "cv_mailer.cli.commands:main"
@@ -66,7 +69,7 @@ Repository = "https://github.com/lakshyads/cv-mailer"
 Issues = "https://github.com/lakshyads/cv-mailer/issues"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -113,4 +116,3 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --cov=cv_mailer --cov-report=html --cov-report=term"
-
