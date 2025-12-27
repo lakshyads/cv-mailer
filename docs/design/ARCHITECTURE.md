@@ -6,10 +6,10 @@ This document explains the architecture, design patterns, and thought process be
 
 ## High-Level Architecture
 
-```
+```sh
 ┌─────────────────────────────────────────────────────────────┐
-│                      CLI Interface (main.py)                 │
-│                    CVMailer Orchestrator                      │
+│                      CLI Interface (main.py)                │
+│                    CVMailer Orchestrator                    │
 └────────────┬────────────────────────────────────────────────┘
              │
      ┌───────┴────────┐
@@ -20,7 +20,7 @@ This document explains the architecture, design patterns, and thought process be
 └─────────┘    └─────────────┘    └──────────────┘
      │                │                  │
      │                │                  │
-┌────▼───────────────▼──────────────────▼────────────┐
+┌────▼────────────────▼──────────────────▼───────────┐
 │         Google APIs (Sheets, Gmail)                │
 │         SQLite Database (Tracking)                 │
 └────────────────────────────────────────────────────┘
@@ -167,7 +167,7 @@ def _update_rate_limit_stats(self):
 
 **Data Model**:
 
-```
+```sh
 JobApplication (1) ──< (many) EmailRecord
 JobApplication (1) ──< (many) ResponseRecord
 DailyEmailStats (standalone)
@@ -212,7 +212,7 @@ DailyEmailStats (standalone)
 
 1. Check daily limit (database)
 2. Check time since last email
-3. Random delay (60-120 seconds)
+3. Random delay (0.1-0.5 seconds)
 4. Send email
 5. Update stats
 
@@ -277,7 +277,7 @@ DailyEmailStats (standalone)
 
 **Workflow**:
 
-```
+```sh
 User runs: python main.py
     ↓
 CVMailer.__init__()
@@ -309,7 +309,7 @@ send_follow_ups() (if enabled)
 
 ### Sending a New Application Email
 
-```
+```sh
 1. User: python main.py
    ↓
 2. CVMailer reads Google Sheet
@@ -338,7 +338,7 @@ send_follow_ups() (if enabled)
 
 ### Sending a Follow-up
 
-```
+```sh
 1. Tracker: get_applications_needing_follow_up()
    → Query: status = REACHED_OUT or APPLIED
    → For each: Check last email date

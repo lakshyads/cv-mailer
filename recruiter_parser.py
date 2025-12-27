@@ -32,61 +32,82 @@ class RecruiterParser:
         if not cell_value or not cell_value.strip():
             return []
         
+        # Normalize the input: remove extra whitespace, handle newlines
+        cell_value = ' '.join(cell_value.split())
+        
         recruiters = []
         
-        # Split by comma (handles multiple recruiters)
-        parts = [p.strip() for p in cell_value.split(',')]
+        # Email pattern for matching
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
         
-        for part in parts:
-            if not part:
-                continue
+        # First, try to find all "Name - email" patterns using regex
+        # This is more robust than splitting by comma first
+        # Pattern: (name part) - (email)
+        # The name part can contain any characters except the dash-email pattern
+        pattern = r'([^,]+?)\s*-\s*(' + email_pattern + r')'
+        matches = re.finditer(pattern, cell_value)
+        
+        for match in matches:
+            name = match.group(1).strip()
+            email = match.group(2).strip()
+            recruiters.append({
+                'name': name if name else None,
+                'email': email
+            })
+        
+        # If we found patterns, use them. Otherwise, try a different approach
+        if not recruiters:
+            # Fallback: split by comma and parse each part
+            parts = [p.strip() for p in cell_value.split(',')]
             
-            # Try to match "Name - email@domain.com" pattern
-            # Pattern: optional name, optional dash, email
-            match = re.match(r'^(.+?)\s*-\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$', part.strip())
-            
-            if match:
-                # Format: "Name - email@domain.com"
-                name = match.group(1).strip()
-                email = match.group(2).strip()
-                recruiters.append({
-                    'name': name if name else None,
-                    'email': email
-                })
-            else:
-                # Check if it's just an email
-                email_match = re.search(r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', part)
-                if email_match:
-                    # Just an email, no name
-                    email = email_match.group(1)
-                    # Try to extract name from before the email
-                    before_email = part[:email_match.start()].strip()
-                    name = before_email if before_email else None
+            for part in parts:
+                if not part:
+                    continue
+                
+                # Try to match "Name - email@domain.com" pattern
+                # Use a more permissive pattern that handles various dash styles
+                match = re.match(r'^(.+?)\s*[-–—]\s*(' + email_pattern + r')$', part.strip())
+                
+                if match:
+                    # Format: "Name - email@domain.com"
+                    name = match.group(1).strip()
+                    email = match.group(2).strip()
                     recruiters.append({
-                        'name': name,
+                        'name': name if name else None,
                         'email': email
                     })
                 else:
-                    # Might be just a name, or invalid format
-                    # Check if it looks like an email (contains @)
-                    if '@' in part:
-                        # Treat as email without name
+                    # Check if it's just an email
+                    email_match = re.search(email_pattern, part)
+                    if email_match:
+                        email = email_match.group(0)
+                        # Try to extract name from before the email
+                        before_email = part[:email_match.start()].strip()
+                        # Remove trailing dash if present
+                        if before_email.endswith('-'):
+                            before_email = before_email[:-1].strip()
+                        name = before_email if before_email else None
                         recruiters.append({
-                            'name': None,
-                            'email': part.strip()
+                            'name': name,
+                            'email': email
                         })
                     else:
-                        # Just a name, no email
-                        logger.warning(f"Could not parse recruiter info: {part}")
+                        # Just a name, no email - skip it
+                        logger.warning(f"Could not parse recruiter info (no email found): {part}")
                         continue
         
-        # Remove duplicates (same email)
+        # Remove duplicates (same email) - case insensitive
         seen_emails = set()
         unique_recruiters = []
         for recruiter in recruiters:
-            if recruiter['email'] and recruiter['email'] not in seen_emails:
-                seen_emails.add(recruiter['email'])
-                unique_recruiters.append(recruiter)
+            if recruiter.get('email'):
+                email_lower = recruiter['email'].lower()
+                if email_lower not in seen_emails:
+                    seen_emails.add(email_lower)
+                    unique_recruiters.append(recruiter)
+            else:
+                # Keep recruiters without emails for now (might want to log this)
+                logger.warning(f"Recruiter entry has no email: {recruiter}")
         
         logger.info(f"Parsed {len(unique_recruiters)} unique recruiters from: {cell_value[:50]}...")
         return unique_recruiters

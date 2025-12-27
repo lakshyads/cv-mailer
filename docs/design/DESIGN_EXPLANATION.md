@@ -213,7 +213,7 @@ class JobStatus(str, Enum):
 
 1. Check daily limit (database query)
 2. Check time since last email
-3. Random delay (60-120 seconds) - human-like
+3. Random delay (0.1-0.5 seconds) - human-like
 4. Send email
 5. Update stats
 

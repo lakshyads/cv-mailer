@@ -77,7 +77,7 @@ pip install -r requirements.txt
 
 3. Get the Spreadsheet ID from the URL:
 
-   ```
+   ```md
    https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
    ```
 
@@ -188,7 +188,7 @@ Gmail has rate limits to prevent abuse:
 
 The application includes:
 
-- Configurable delays between emails (default: 60-120 seconds)
+- Configurable delays between emails (default: 0.1-0.5 seconds)
 - Daily email limit tracking (default: 50/day, adjust in `.env`)
 - Automatic rate limiting
 
@@ -229,7 +229,7 @@ Templates can be customized in `email_templates.py`.
 
 ## Application Status Flow
 
-```
+```sh
 DRAFT → REACHED_OUT → APPLIED → INTERVIEW_SCHEDULED → IN_PROGRESS → CLOSED
                                                       ↓
                                                    REJECTED
