@@ -2,6 +2,8 @@
 
 You're seeing "Error 403: access_denied" because your email isn't added as a test user in Google Cloud Console.
 
+> 📖 **Complete OAuth Setup**: See [Setup Guide - Google Cloud Setup](SETUP_GUIDE.md#step-2-google-cloud-setup)
+
 ## Quick Fix Steps
 
 ### 1. Go to Google Cloud Console
@@ -32,8 +34,11 @@ Make sure these are set:
 After adding yourself as a test user, try running the application again:
 
 ```bash
+# Using the new package command (recommended)
+cv-mailer --dry-run
+
+# Or using the traditional way
 cd /Users/lds/Documents/Workspace/Projects/cv-mailer
-source venv/bin/activate
 python main.py --dry-run
 ```
 

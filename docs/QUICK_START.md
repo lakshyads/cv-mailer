@@ -1,185 +1,124 @@
 # Quick Start Guide
 
-Get up and running with CV Mailer in 5 minutes!
+Get CV Mailer running in 5 minutes! 🚀
 
-## Step 1: Install Dependencies
+> 📖 **Need more details?** See the [Complete Setup Guide](SETUP_GUIDE.md)
+
+## Prerequisites
+
+- Python 3.8+
+- Google account
+- Google Sheet with job applications
+- Resume file (PDF)
+
+## Step 1: Install (1 minute)
 
 ```bash
-# Run the setup script
 ./setup.sh
-
-# Or manually:
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
 ```
 
-## Step 2: Google Cloud Setup (5 minutes)
+This automatically:
 
-1. **Create/Select Project**
-   - Go to https://console.cloud.google.com/
-   - Create a new project or select existing
+- Creates virtual environment
+- Installs the package
+- Sets up directories
+- Creates `.env` from template
+
+## Step 2: Google Cloud Setup (3 minutes)
+
+1. **Create Project**
+   - Go to <https://console.cloud.google.com/>
+   - Create new project
 
 2. **Enable APIs**
-   - Go to "APIs & Services" > "Library"
-   - Enable "Google Sheets API"
-   - Enable "Gmail API"
+   - APIs & Services > Library
+   - Enable: **Google Sheets API** + **Gmail API**
 
-3. **Create Credentials**
-   - Go to "APIs & Services" > "Credentials"
-   - Click "Create Credentials" > "OAuth client ID"
-   - Application type: "Desktop app"
-   - Name: "CV Mailer"
-   - Click "Create"
-   - Click "Download JSON"
-   - Save as `credentials.json` in project root
+3. **Get Credentials**
+   - APIs & Services > Credentials
+   - Create Credentials > OAuth client ID
+   - Choose "Desktop app"
+   - Download JSON → save as `credentials.json` in project root
 
-## Step 3: Prepare Google Sheet
+> 💡 **OAuth Consent Screen**: See [Setup Guide](SETUP_GUIDE.md#step-2-google-cloud-setup) for detailed OAuth setup
 
-1. Create a Google Sheet with columns:
-   - Company Name
-   - Position
-   - Recruiter Email
-   - (Optional) Recruiter Name, Location, Job Posting URL
+## Step 3: Configure (30 seconds)
 
-2. Get Spreadsheet ID from URL:
-   ```
-   https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
-   ```
+Edit `.env`:
 
-3. Share sheet with your Google account (if using OAuth)
-
-## Step 4: Configure
-
-1. Copy environment template:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edit `.env`:
-   ```env
-   SPREADSHEET_ID=your_spreadsheet_id_here
-   GMAIL_USER=your_email@gmail.com
-   SENDER_NAME=Your Name
-   RESUME_FILE_PATH=./resume.pdf
-   ```
-
-3. Place your resume PDF in project root (or use Google Drive link)
-
-## Step 5: Test Run
-
-**⚠️ Important: Activate virtual environment first!**
-
-```bash
-# Activate virtual environment
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Dry run (no emails sent)
-python main.py --dry-run
-
-# Check what will be sent
+```env
+SPREADSHEET_ID=your_spreadsheet_id_here
+GMAIL_USER=your_email@gmail.com
+SENDER_NAME=Your Name
+RESUME_FILE_PATH=./assets/your_resume.pdf
 ```
 
-## Step 6: First Authentication
+> 📋 **Need all options?** See [Setup Guide - Configuration](SETUP_GUIDE.md#step-3-configure-environment-variables)
 
-On first run:
-1. Browser will open for OAuth
-2. Sign in with your Google account
-3. Authorize access to Sheets and Gmail
-4. Credentials saved for future use
+## Step 4: Set Up Google Sheet (30 seconds)
 
-## Step 7: Send Emails
+Required columns:
 
-**⚠️ Remember: Activate virtual environment first!**
+- `Company Name` (required)
+- `Position` (required)
+- `Recruiter Name` or `Recruiter Names` (required)
+
+> 📊 **Sheet format details**: See [Google Sheets Template Guide](GOOGLE_SHEETS_TEMPLATE.md)
+
+## Step 5: Test & Run
 
 ```bash
-# Activate virtual environment (if not already active)
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Test without sending emails
+cv-mailer --dry-run
 
-# Send emails to new applications
-python main.py
+# First run will open browser for OAuth
+# Authorize access → credentials saved
 
-# Or with options:
-python main.py --new          # Process new only
-python main.py --follow-ups    # Send follow-ups only
-python main.py --stats         # View statistics
+# Send emails
+cv-mailer
 ```
 
 ## Common Commands
 
-**Always activate virtual environment before running:**
-
 ```bash
-# Activate virtual environment
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Test without sending
-python main.py --dry-run
-
-# Send follow-ups
-python main.py --follow-ups
-
-# View statistics
-python main.py --stats
-
-# Process new applications
-python main.py --new
+cv-mailer --dry-run      # Test mode
+cv-mailer --new          # New applications only
+cv-mailer --follow-ups   # Send follow-ups only
+cv-mailer --stats        # View statistics
+cv-mailer --help         # All options
 ```
 
-## Virtual Environment Cheat Sheet
+## Quick Troubleshooting
 
-```bash
-# Activate virtual environment
-source venv/bin/activate          # macOS/Linux
-venv\Scripts\activate             # Windows
+| Problem | Quick Fix |
+|---------|----------|
+| `credentials.json not found` | Download from Google Cloud Console |
+| `Authentication failed` | Delete `token.pickle` and `gmail_token.pickle`, re-run |
+| `Cannot read Sheets` | Check `SPREADSHEET_ID` and sheet sharing |
+| `cv-mailer command not found` | Run `pip install -e .` again |
 
-# Deactivate (when done)
-deactivate
-
-# Check if active (you'll see (venv) in your prompt)
-# Example: (venv) user@computer:~/cv-mailer$
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Create new venv (if needed)
-python3 -m venv venv
-```
-
-## Troubleshooting
-
-**"Credentials file not found"**
-- Ensure `credentials.json` is in project root
-- Check file name spelling
-
-**"Authentication failed"**
-- Delete `token.pickle` and `gmail_token.pickle`
-- Re-run to re-authenticate
-
-**"Cannot read from Google Sheets"**
-- Verify Spreadsheet ID is correct
-- Ensure sheet is shared with your account
-- Check worksheet name matches
-
-**"Rate limit exceeded"**
-- Increase delays in `.env`
-- Reduce `DAILY_EMAIL_LIMIT`
-- Wait 24 hours
+> 🔧 **More troubleshooting**: See [Setup Guide - Troubleshooting](SETUP_GUIDE.md#troubleshooting) or [OAuth Fix](OAUTH_FIX.md)
 
 ## Next Steps
 
-- Customize email templates in `email_templates.py`
-- Adjust rate limits in `.env`
-- Review tracking in database: `cv_mailer.db`
-- Check logs: `cv_mailer.log`
+- ✅ **Customize templates**: `src/cv_mailer/services/template_service.py`
+- ✅ **Start API server**: `cv-mailer-api` → <http://localhost:8000/docs>
+- ✅ **Read full docs**: [Setup Guide](SETUP_GUIDE.md), [API Guide](API_GUIDE.md)
 
-## Safety Tips
+## Multi-Features
 
-1. **Always test with `--dry-run` first**
-2. **Start with low email limits** (10-20/day)
-3. **Review emails before sending** (check templates)
-4. **Backup your Google Sheet** before first run
-5. **Monitor logs** for errors
+**Multi-Sheet**: `PROCESS_ALL_SHEETS=true` in `.env`
 
-Happy job hunting! 🚀
+**Multi-Recruiter**: Use format in sheet:
 
+```text
+Recruiter Names: Alice - alice@co.com, Bob - bob@co.com
+```
+
+See [Google Sheets Template](GOOGLE_SHEETS_TEMPLATE.md) for details.
+
+---
+
+**That's it!** You're ready to automate your job applications. 🎉
+
+**Need help?** Check the [Complete Setup Guide](SETUP_GUIDE.md) for detailed instructions.

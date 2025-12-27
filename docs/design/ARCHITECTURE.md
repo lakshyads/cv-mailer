@@ -1,30 +1,93 @@
 # CV Mailer - Architecture & Design Explanation
 
-## Overview
+This document explains the architecture, design patterns, and thought process behind the CV Mailer application after the refactoring (December 2025).
 
-This document explains the architecture, design patterns, and thought process behind the CV Mailer application.
+> 📖 **Other Docs**: [Quick Start](../QUICK_START.md) | [Setup Guide](../SETUP_GUIDE.md) | [Design Explanation](DESIGN_EXPLANATION.md) | [Features](FEATURE_SUGGESTIONS.md)
+
+## Overview
 
 ## High-Level Architecture
 
-```sh
-┌─────────────────────────────────────────────────────────────┐
-│                      CLI Interface (main.py)                │
-│                    CVMailer Orchestrator                    │
-└────────────┬────────────────────────────────────────────────┘
-             │
-     ┌───────┴────────┐
-     │                │
-┌────▼────┐    ┌──────▼──────┐    ┌──────────────┐
-│ Sheets  │    │   Gmail     │    │   Tracker    │
-│ Client  │    │   Sender    │    │  (Database)  │
-└─────────┘    └─────────────┘    └──────────────┘
-     │                │                  │
-     │                │                  │
-┌────▼────────────────▼──────────────────▼───────────┐
-│         Google APIs (Sheets, Gmail)                │
-│         SQLite Database (Tracking)                 │
-└────────────────────────────────────────────────────┘
 ```
+┌───────────────────────────────────────────────────────────────────┐
+│                     Presentation Layer                             │
+├─────────────────────────────┬─────────────────────────────────────┤
+│   CLI (src/cv_mailer/cli/)  │  API (src/cv_mailer/api/)          │
+│   ├─ commands.py            │  ├─ app.py (FastAPI)                │
+│   ├─ app.py (CVMailer)      │  ├─ dependencies.py                 │
+│   └─ display.py (Rich UI)   │  └─ routers/ (endpoints)            │
+└─────────────┬───────────────┴──────────────┬──────────────────────┘
+              │                               │
+              └───────────┬───────────────────┘
+                          │
+┌─────────────────────────▼─────────────────────────────────────────┐
+│                   Business Logic Layer                             │
+│                  (src/cv_mailer/services/)                         │
+│   ├─ tracker.py (ApplicationTracker - core logic)                 │
+│   └─ template_service.py (EmailTemplate - email generation)       │
+└────────────────────┬──────────────────────────────────────────────┘
+                     │
+┌────────────────────▼───────────────────────────────────────────────┐
+│               Integration & Data Access Layer                       │
+├──────────────────────────┬──────────────────────────┬──────────────┤
+│  Gmail Integration       │  Sheets Integration      │  Database    │
+│  (integrations/gmail/)   │  (integrations/google_   │  (utils/     │
+│  ├─ auth.py              │   sheets/)               │   database)  │
+│  └─ client.py            │  ├─ auth.py              │              │
+│     (GmailSender)        │  └─ client.py            │              │
+│                          │     (GoogleSheetsClient)  │              │
+└──────────────┬───────────┴──────────────┬───────────┴──────────────┘
+               │                          │
+┌──────────────▼──────────────────────────▼───────────────────────────┐
+│                       Core Layer                                     │
+│                   (src/cv_mailer/core/)                              │
+│   ├─ models.py (JobApplication, EmailRecord, Recruiter - ORM)       │
+│   └─ enums.py (JobStatus, EmailType, EmailStatus)                   │
+└─────────────────────────────┬────────────────────────────────────────┘
+                              │
+┌─────────────────────────────▼────────────────────────────────────────┐
+│                    Supporting Components                              │
+├────────────────────┬─────────────────────┬──────────────────────────┤
+│  Configuration     │  Parsers            │  Utilities               │
+│  (config/)         │  (parsers/)         │  (utils/)                │
+│  └─ settings.py    │  └─ recruiter.py    │  ├─ database.py          │
+│     (Config class) │     (RecruiterParser│  ├─ validators.py        │
+│                    │      for multi-      │  └─ date.py              │
+│                    │      recruiter)      │                          │
+└────────────────────┴─────────────────────┴──────────────────────────┘
+                              │
+┌─────────────────────────────▼────────────────────────────────────────┐
+│                     External Services                                 │
+│   - Google Sheets API (read/write application data)                  │
+│   - Gmail API (send emails with rate limiting)                       │
+│   - SQLite Database (data/ - tracking & history)                     │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+## Package Structure
+
+The application follows the modern `src/` layout:
+
+```
+src/cv_mailer/
+├── __init__.py              # Public API exports
+├── core/                    # Domain models (framework-agnostic)
+├── config/                  # Configuration management
+├── services/                # Business logic
+├── integrations/            # External API clients
+├── parsers/                 # Data parsing
+├── utils/                   # Utility functions
+├── cli/                     # CLI application
+└── api/                     # REST API (FastAPI)
+```
+
+**Benefits**:
+
+- Clear separation of concerns
+- Easy to navigate and understand
+- Supports both CLI and API
+- Ready for testing (tests/ mirrors structure)
+- Professional Python packaging
 
 ## Design Patterns Used
 
@@ -32,26 +95,31 @@ This document explains the architecture, design patterns, and thought process be
 
 The application is divided into distinct layers:
 
-- **Presentation Layer**: `main.py` - CLI interface, user interaction
-- **Business Logic Layer**: `tracker.py`, `email_templates.py` - Core business rules
-- **Data Access Layer**: `models.py`, `google_sheets.py`, `gmail_sender.py` - Data persistence and external APIs
-- **Configuration Layer**: `config.py` - Configuration management
+- **Presentation Layer**: CLI (`cli/`) and API (`api/`) - User/client interaction
+- **Business Logic Layer**: Services (`services/`) - Core business rules
+- **Integration Layer**: External APIs (`integrations/`) - Gmail, Sheets
+- **Data Access Layer**: Database utilities (`utils/database.py`)
+- **Core Layer**: Domain models (`core/`) - Framework-agnostic data structures
+- **Configuration Layer**: Settings (`config/`) - Environment configuration
 
 **Why?** This separation makes the code:
 
 - Testable (each layer can be tested independently)
 - Maintainable (changes in one layer don't affect others)
-- Extensible (easy to add UI without changing business logic)
+- Extensible (added API without changing CLI)
+- Reusable (same business logic for CLI and API)
 
 ### 2. **Repository Pattern**
 
 The `ApplicationTracker` class acts as a repository for database operations:
 
 ```python
+# src/cv_mailer/services/tracker.py
 class ApplicationTracker:
     def get_or_create_job_application(...)
     def record_email_sent(...)
     def get_applications_needing_follow_up(...)
+    def get_statistics(...)
 ```
 
 **Why?**
@@ -59,31 +127,39 @@ class ApplicationTracker:
 - Encapsulates database logic
 - Makes it easy to swap SQLite for PostgreSQL later
 - Provides a clean interface for business logic
+- Same repository used by CLI and API
 
 ### 3. **Strategy Pattern**
 
 Email templates use the Strategy pattern:
 
 ```python
+# src/cv_mailer/services/template_service.py
 class EmailTemplate:
-    @classmethod
+    @staticmethod
     def render_first_contact(...)  # Strategy 1
-    @classmethod
+    @staticmethod
     def render_follow_up(...)      # Strategy 2
+    # Future: render_interview_thank_you(...)
 ```
 
-**Why?** Easy to add new email types (e.g., `render_rejection_response`) without modifying existing code.
+**Why?** Easy to add new email types without modifying existing code (Open/Closed Principle).
 
 ### 4. **Factory Pattern**
 
-The `get_session()` function in `models.py` is a factory:
+Database session creation uses a factory:
 
 ```python
+# src/cv_mailer/utils/database.py
 def get_session():
     engine = get_engine()
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     return Session()
+
+def init_database():
+    # Initialize database with proper setup
+    ...
 ```
 
 **Why?** Centralizes database session creation and ensures proper initialization.
@@ -93,371 +169,541 @@ def get_session():
 The `Config` class uses class-level attributes, acting like a singleton:
 
 ```python
+# src/cv_mailer/config/settings.py
 class Config:
     SPREADSHEET_ID: str = os.getenv("SPREADSHEET_ID", "")
     # ... all config is class-level
+    
+    @classmethod
+    def validate(cls) -> list[str]:
+        # Validate configuration at startup
+        ...
 ```
 
-**Why?** Configuration should be consistent across the application.
+**Why?** Single source of truth for configuration across the application.
 
-### 6. **Template Method Pattern**
+### 6. **Dependency Injection (New in API)**
 
-The `CVMailer.process_new_applications()` method defines the algorithm:
+FastAPI routes use dependency injection:
 
 ```python
-def process_new_applications(self):
-    1. Read from Sheets
-    2. For each row:
-        a. Validate data
-        b. Check if already processed
-        c. Generate email
-        d. Send email
-        e. Record in database
-        f. Update spreadsheet
+# src/cv_mailer/api/dependencies.py
+def get_tracker() -> ApplicationTracker:
+    tracker = ApplicationTracker()
+    try:
+        yield tracker
+    finally:
+        tracker.cleanup()
+
+# src/cv_mailer/api/routers/applications.py
+@router.get("/applications")
+async def list_applications(
+    tracker: ApplicationTracker = Depends(get_tracker)
+):
+    # tracker is injected automatically
+    ...
 ```
 
-**Why?** The algorithm is fixed, but individual steps can be customized.
+**Why?**
+
+- Easy to test (inject mocks)
+- Clean separation of concerns
+- Automatic resource management
+- Type-safe
 
 ### 7. **Observer Pattern (Implicit)**
 
-Rate limiting tracks daily stats and "observes" email sends:
+The application implicitly uses Observer pattern for status updates:
 
 ```python
-def _update_rate_limit_stats(self):
-    stats.emails_sent += 1  # Observing email sends
+# When email is sent:
+1. GmailSender.send_email() → Sends email
+2. ApplicationTracker.record_email_sent() → Updates database
+3. GoogleSheetsClient.update_cell() → Updates sheet status
+
+# All observers react to the "email sent" event
 ```
 
-## Component Breakdown
+## Component Deep Dive
 
-### 1. Configuration Management (`config.py`)
+### Configuration Management (`config/settings.py`)
 
-**Purpose**: Centralized configuration with validation
-
-**Design Decisions**:
-
-- Uses environment variables (12-factor app principle)
-- Class-based for type hints and IDE support
-- Validation method to catch errors early
-- Default values for optional settings
+**Design Decision**: Class-based with environment variables and validation
 
 **Why not a simple dict?**
 
-- Type safety
-- IDE autocomplete
-- Validation at startup
+- Type hints (IDE autocomplete)
+- Validation at startup (fail fast)
+- Default values
 - Easy to extend
+- Single source of truth
 
-### 2. Database Models (`models.py`)
+**Example**:
 
-**Purpose**: Define data structure and relationships
+```python
+class Config:
+    SPREADSHEET_ID: str = os.getenv("SPREADSHEET_ID", "")
+    
+    @classmethod
+    def validate(cls) -> list[str]:
+        errors = []
+        if not cls.SPREADSHEET_ID:
+            errors.append("SPREADSHEET_ID is required")
+        return errors
+```
 
-**Design Decisions**:
+**Future Enhancement**: Migrate to Pydantic for advanced validation.
 
-- SQLAlchemy ORM (not raw SQL)
-- Enum types for status fields (type safety)
-- Relationships defined (EmailRecord → JobApplication)
-- Timestamps on all records
+### Database Models (`core/models.py` & `core/enums.py`)
+
+**Design Decision**: SQLAlchemy ORM with separate enums
 
 **Why SQLAlchemy?**
 
-- Database-agnostic (can switch from SQLite to PostgreSQL)
-- Type safety
-- Relationship management
-- Migration support (Alembic)
+- Database-agnostic (can switch SQLite → PostgreSQL)
+- Type safety with Enums
+- Relationship management (M2M for recruiters)
+- Migration support (Alembic - future)
+- Query builder
 
-**Data Model**:
+**Why Separate Enums?**
 
-```sh
-JobApplication (1) ──< (many) EmailRecord
-JobApplication (1) ──< (many) ResponseRecord
-DailyEmailStats (standalone)
+```python
+# core/enums.py
+class JobStatus(str, Enum):
+    DRAFT = "draft"
+    REACHED_OUT = "reached_out"
+    APPLIED = "applied"
+    # ...
 ```
 
-### 3. Google Sheets Client (`google_sheets.py`)
+Benefits:
 
-**Purpose**: Abstract Google Sheets API interactions
+- Prevents typos
+- IDE autocomplete
+- Type checking
+- Reusable across modules
+- API can use same enums
 
-**Design Decisions**:
+### Integration Layers
 
-- Single responsibility: only handles Sheets operations
-- Returns dictionaries (not raw API responses)
-- Handles authentication internally
-- Flexible column name matching
+**Gmail Integration** (`integrations/gmail/`)
 
-**Why a separate class?**
+- `auth.py` - OAuth2 authentication
+- `client.py` - `GmailSender` with rate limiting
 
-- Can be swapped for CSV/Excel reader
+**Google Sheets Integration** (`integrations/google_sheets/`)
+
+- `auth.py` - OAuth2 authentication (separate from Gmail)
+- `client.py` - `GoogleSheetsClient` with multi-sheet support
+
+**Why Separate Auth Files?**
+
+- Different scopes (Gmail send vs. Sheets read/write)
+- Different token files (`gmail_token.pickle` vs. `token.pickle`)
+- Independent authentication flows
 - Testable in isolation
-- Reusable in other projects
 
-**Authentication Flow**:
+### Services Layer (`services/`)
 
-1. Check for saved token
-2. If expired, refresh
-3. If missing, OAuth flow
-4. Save token for next time
+**ApplicationTracker** (`tracker.py`)
 
-### 4. Gmail Sender (`gmail_sender.py`)
+- Core business logic
+- Database operations
+- Status management
+- Statistics generation
+- **Shared by CLI and API** ✓
 
-**Purpose**: Send emails with rate limiting
+**EmailTemplate** (`template_service.py`)
 
-**Design Decisions**:
+- Jinja2-based templating
+- First contact emails
+- Follow-up emails
+- **Shared by CLI and API** ✓
 
-- Rate limiting built-in (not external)
-- Random delays (human-like behavior)
-- Daily limit tracking in database
-- Resume attachment OR drive link
+### CLI Application (`cli/`)
 
-**Rate Limiting Strategy**:
+**Structure**:
 
-1. Check daily limit (database)
-2. Check time since last email
-3. Random delay (0.1-0.5 seconds)
-4. Send email
-5. Update stats
+- `commands.py` - Entry point, argument parsing
+- `app.py` - Main application logic (`CVMailer` class)
+- `display.py` - Rich console output (tables, progress bars)
 
-**Why random delays?**
+**Entry Point** (`pyproject.toml`):
 
-- Avoids detection patterns
-- More human-like
-- Reduces throttling risk
-
-### 5. Email Templates (`email_templates.py`)
-
-**Purpose**: Generate email content
-
-**Design Decisions**:
-
-- Jinja2 templating (not string formatting)
-- HTML emails (professional appearance)
-- Separate templates for first contact vs follow-up
-- Class methods (no instance needed)
-
-**Why Jinja2?**
-
-- Powerful templating (conditionals, loops)
-- Easy to customize
-- Industry standard
-- Can load from files later
-
-### 6. Application Tracker (`tracker.py`)
-
-**Purpose**: Business logic for tracking applications
-
-**Design Decisions**:
-
-- Context manager pattern (`with ApplicationTracker()`)
-- High-level methods (not raw SQL)
-- Follow-up detection logic
-- Statistics aggregation
-
-**Key Methods**:
-
-- `get_or_create_job_application()` - Idempotent creation
-- `get_applications_needing_follow_up()` - Business logic
-- `record_email_sent()` - Audit trail
-- `get_statistics()` - Reporting
-
-**Why context manager?**
-
-- Ensures database session cleanup
-- Prevents connection leaks
-- Cleaner code
-
-### 7. Main Orchestrator (`main.py`)
-
-**Purpose**: Coordinate all components
-
-**Design Decisions**:
-
-- Rich library for beautiful CLI
-- Progress bars for long operations
-- Dry-run mode for safety
-- Separate methods for different operations
-
-**Workflow**:
-
-```sh
-User runs: python main.py
-    ↓
-CVMailer.__init__()
-    ├─ Validate config
-    ├─ Initialize database
-    ├─ Initialize Sheets client
-    ├─ Initialize Gmail client
-    └─ Initialize tracker
-    ↓
-process_new_applications()
-    ├─ Read from Sheets
-    ├─ For each row:
-    │   ├─ Validate
-    │   ├─ Check if sent
-    │   ├─ Generate email
-    │   ├─ Send (with rate limiting)
-    │   ├─ Record in DB
-    │   └─ Update sheet
-    └─ Return count
-    ↓
-send_follow_ups() (if enabled)
-    ├─ Query applications needing follow-up
-    ├─ Generate follow-up email
-    ├─ Send
-    └─ Record
+```toml
+[project.scripts]
+cv-mailer = "cv_mailer.cli.commands:main"
 ```
 
-## Data Flow
+Creates global `cv-mailer` command automatically.
 
-### Sending a New Application Email
+### REST API (`api/`)
 
-```sh
-1. User: python main.py
-   ↓
-2. CVMailer reads Google Sheet
-   ↓
-3. For each row:
-   a. Extract: company, position, email, etc.
-   b. Tracker: get_or_create_job_application()
-      → Check DB if exists
-      → Create if new
-   c. Check: Has email been sent? (DB query)
-   d. EmailTemplate: render_first_contact()
-      → Generate subject & body
-   e. GmailSender: send_email()
-      → Check rate limits (DB query)
-      → Wait if needed
-      → Create MIME message
-      → Attach resume
-      → Send via Gmail API
-      → Update daily stats (DB)
-   f. Tracker: record_email_sent()
-      → Save to EmailRecord table
-      → Update JobApplication status
-   g. Sheets: update_cell()
-      → Update "Status" column
+**Structure**:
+
+- `app.py` - FastAPI application setup, CORS, middleware
+- `dependencies.py` - Dependency injection (DB sessions, services)
+- `routers/` - Route handlers by resource
+
+**Router Pattern**:
+
+```python
+# api/routers/applications.py
+router = APIRouter()
+
+@router.get("/applications")
+async def list_applications(...):
+    # Uses same ApplicationTracker as CLI!
+    ...
+
+# api/app.py
+app.include_router(applications.router, prefix="/api/v1")
 ```
 
-### Sending a Follow-up
+**Benefits**:
 
-```sh
-1. Tracker: get_applications_needing_follow_up()
-   → Query: status = REACHED_OUT or APPLIED
-   → For each: Check last email date
-   → Filter: last_email > 7 days ago
-   → Filter: follow_up_count < MAX_FOLLOW_UPS
-   ↓
-2. For each application:
-   a. Get follow-up number (count existing + 1)
-   b. EmailTemplate: render_follow_up()
-   c. GmailSender: send_email()
-   d. Tracker: record_email_sent(is_follow_up=True)
+- Organized by resource
+- Consistent structure
+- Automatic OpenAPI docs
+- **Reuses all business logic from CLI** ✓
+
+## Data Flow Examples
+
+### CLI: Sending Application Emails
+
+```
+User: cv-mailer --new
+    ↓
+1. cli/commands.py:main()
+   - Parse arguments
+   - Setup logging (logs/cv_mailer.log)
+   - Create CVMailer instance
+    ↓
+2. cli/app.py:CVMailer.__init__()
+   - Config.validate() → Fail fast if misconfigured
+   - init_database() → Create tables (data/cv_mailer.db)
+   - GoogleSheetsClient() → OAuth if first time
+   - GmailSender() → OAuth if first time
+   - ApplicationTracker() → Business logic ready
+    ↓
+3. cli/app.py:process_new_applications()
+   - Read from Google Sheets (multi-sheet if enabled)
+   - For each row:
+     ├─ RecruiterParser.parse_recruiters() → Handle multi-recruiter
+     ├─ ApplicationTracker.get_or_create_job_application()
+     ├─ For each recruiter:
+     │  ├─ Check if already sent (EmailRecord query)
+     │  ├─ EmailTemplate.render_first_contact()
+     │  ├─ GmailSender.send_email() → Rate limiting, attach resume
+     │  ├─ ApplicationTracker.record_email_sent()
+     │  └─ GoogleSheetsClient.update_cell() → Update status
+     └─ Display progress (display.py)
+    ↓
+4. Summary displayed via Rich console
 ```
 
-## Design Principles Applied
+### API: Fetching Applications
 
-### 1. **SOLID Principles**
+```
+Client: GET /api/v1/applications?status=reached_out
+    ↓
+1. api/routers/applications.py:list_applications()
+   - Parse query params (status, limit, offset)
+   - Inject ApplicationTracker (via get_tracker dependency)
+    ↓
+2. services/tracker.py:ApplicationTracker (same as CLI!)
+   - Query database with filters
+   - Return JobApplication objects
+    ↓
+3. FastAPI serialization
+   - Convert SQLAlchemy objects to JSON
+   - Format dates (ISO 8601)
+   - Return paginated response
+    ↓
+Client receives: {"total": 42, "items": [...]}
+```
 
-- **Single Responsibility**: Each class has one job
-  - `GoogleSheetsClient` → only Sheets operations
-  - `GmailSender` → only email sending
-  - `ApplicationTracker` → only tracking logic
+**Key Insight**: CLI and API **share the same business logic**. Only presentation differs!
 
-- **Open/Closed**: Open for extension, closed for modification
-  - New email types: extend `EmailTemplate`
-  - New data sources: implement new client class
-  - New statuses: add to `JobStatus` enum
+## Design Principles (SOLID)
 
-- **Liskov Substitution**: Not heavily used (no inheritance hierarchy)
+### 1. Single Responsibility Principle (SRP)
 
-- **Interface Segregation**: Small, focused interfaces
-  - Each client class has minimal public API
+- `GmailSender` only sends emails
+- `GoogleSheetsClient` only interacts with Sheets
+- `ApplicationTracker` only manages business logic
+- `EmailTemplate` only generates email content
 
-- **Dependency Inversion**: Depend on abstractions
-  - `CVMailer` depends on client classes, not implementations
-  - Could swap SQLite for PostgreSQL easily
+### 2. Open/Closed Principle (OCP)
 
-### 2. **DRY (Don't Repeat Yourself)**
+- Easy to add new email types without modifying `EmailTemplate`
+- Easy to add new API endpoints without changing business logic
+- Easy to add new integrations (CSV, LinkedIn) without changing core
 
-- Configuration in one place (`config.py`)
-- Database session creation centralized
-- Email template logic separated
+### 3. Liskov Substitution Principle (LSP)
 
-### 3. **KISS (Keep It Simple, Stupid)**
+- Can swap `GmailSender` with `SMTPSender` (future)
+- Can swap `GoogleSheetsClient` with `CSVReader` (future)
 
-- SQLite for simplicity (not PostgreSQL)
-- Class-based config (not complex YAML)
-- Direct file paths (not complex routing)
+### 4. Interface Segregation Principle (ISP)
 
-### 4. **YAGNI (You Aren't Gonna Need It)**
+- Small, focused interfaces
+- CLI only uses what it needs
+- API only uses what it needs
 
-- No complex caching (not needed yet)
-- No message queue (simple sequential processing)
-- No microservices (monolith is fine for this scale)
+### 5. Dependency Inversion Principle (DIP)
+
+- Business logic (`ApplicationTracker`) doesn't depend on Gmail/Sheets
+- Business logic depends on abstractions (method calls)
+- Can mock dependencies for testing
+
+## Multi-Sheet & Multi-Recruiter Architecture
+
+### Multi-Sheet Support
+
+**Implementation** (`integrations/google_sheets/client.py`):
+
+1. `list_all_sheets()` - Get all sheet metadata
+2. `read_all_sheets(sheet_filter)` - Read from all/filtered sheets
+3. Unique row ID: `{sheet_name}_{row_number}`
+4. Update correct sheet automatically
+
+**Configuration** (`.env`):
+
+```env
+PROCESS_ALL_SHEETS=true
+SHEET_NAME_FILTER=2024  # Optional regex
+```
+
+### Multi-Recruiter Support
+
+**Implementation** (`parsers/recruiter.py`):
+
+```python
+RecruiterParser.parse_recruiters(
+    "Alice - alice@co.com, Bob - bob@co.com"
+)
+# Returns: [
+#   {'name': 'Alice', 'email': 'alice@co.com'},
+#   {'name': 'Bob', 'email': 'bob@co.com'}
+# ]
+```
+
+**Database Design**:
+
+- Many-to-Many relationship (`job_application_recruiter` table)
+- Track emails per recruiter
+- Follow-ups per recruiter
 
 ## Error Handling Strategy
 
 1. **Configuration Errors**: Fail fast at startup
-2. **API Errors**: Log and continue (don't crash on one failure)
-3. **Database Errors**: Rollback transactions
+   - `Config.validate()` in `__init__()`
+   - Better to fail before sending emails
+
+2. **API Errors**: Log and continue (CLI) / Return error (API)
+   - One failed email shouldn't stop batch (CLI)
+   - Return 404/400/500 appropriately (API)
+
+3. **Database Errors**: Rollback transaction
+   - SQLAlchemy session management
+   - Maintain data consistency
+
 4. **Rate Limit Errors**: Skip and log warning
+   - Don't crash, just skip email
+   - User can retry later
 
-## Security Considerations
+## Security Architecture
 
-1. **Credentials**: Never committed (`.gitignore`)
-2. **Environment Variables**: Sensitive data in `.env`
-3. **OAuth Tokens**: Stored locally, encrypted by Google
-4. **Rate Limiting**: Prevents abuse detection
+1. **Credentials**: Never committed
+   - `.gitignore`: `credentials.json`, `.env`, `*.pickle`
+   - OAuth tokens in `token.pickle`, `gmail_token.pickle`
+
+2. **Environment Variables**: `.env` for configuration
+   - Not in source control
+   - Easy to manage per environment
+
+3. **OAuth Tokens**: Encrypted by Google
+   - Automatic refresh handling
+   - Separate tokens for Gmail and Sheets
+
+4. **Rate Limiting**: Prevents abuse
+   - Random delays (human-like)
+   - Daily limits tracked in database
+
+5. **API Security** (Future):
+   - Add authentication (OAuth2/JWT)
+   - Rate limiting per client
+   - CORS configured properly
 
 ## Extensibility Points
 
-### Easy to Extend
+### Easy to Add
 
-1. **New Email Types**: Add method to `EmailTemplate`
-2. **New Data Sources**: Implement new client (e.g., `CSVClient`)
-3. **New Statuses**: Add to `JobStatus` enum
-4. **New Tracking Fields**: Add columns to models
-5. **Web UI**: Add Flask/FastAPI layer using existing modules
+1. **New Email Types**:
 
-### Would Require Refactoring
+   ```python
+   # services/template_service.py
+   @staticmethod
+   def render_interview_thank_you(...):
+       ...
+   ```
 
-1. **Multi-account Support**: Need to refactor `GmailSender`
-2. **Async Processing**: Need to add async/await
-3. **Distributed System**: Need message queue
+2. **New Integrations**:
+
+   ```python
+   # integrations/linkedin/client.py
+   class LinkedInClient:
+       def get_recruiter_info(self, profile_url):
+           ...
+   ```
+
+3. **New API Endpoints**:
+
+   ```python
+   # api/routers/analytics.py
+   @router.get("/analytics/conversion-rate")
+   async def get_conversion_rate():
+       ...
+   ```
+
+4. **New CLI Commands**:
+
+   ```python
+   # cli/commands.py
+   parser.add_argument('--export-csv', ...)
+   ```
+
+### Would Require Refactoring (But Feasible)
+
+1. **Async Throughout**: Add async/await (FastAPI ready, CLI needs update)
+2. **Multi-Account**: Refactor to support multiple Gmail accounts
+3. **Real-time Updates**: Add WebSockets (FastAPI supports)
+4. **Message Queue**: Add Celery for distributed email sending
+
+## Testing Strategy
+
+Structure ready for comprehensive testing:
+
+```
+tests/
+├── unit/
+│   ├── test_config.py
+│   ├── test_models.py
+│   ├── test_tracker.py
+│   └── test_email_template.py
+├── integration/
+│   ├── test_gmail_integration.py
+│   ├── test_sheets_integration.py
+│   └── test_database.py
+└── e2e/
+    ├── test_cli_workflow.py
+    └── test_api_endpoints.py
+```
+
+**Mocking Strategy**:
+
+- Mock Gmail API for testing email sending
+- Mock Sheets API for testing data reading
+- Mock database for testing business logic
+- FastAPI TestClient for API testing
 
 ## Performance Considerations
 
-1. **Database**: SQLite is fine for single-user, can upgrade later
-2. **API Calls**: Sequential (rate limiting), could parallelize with care
-3. **Memory**: Loads all rows into memory (fine for typical use)
-4. **Rate Limiting**: Database queries on each email (acceptable overhead)
+### Database
 
-## Testing Strategy (Future)
+- SQLite for simplicity (sufficient for personal use)
+- Can upgrade to PostgreSQL for production
+- Add connection pooling for API
 
-- **Unit Tests**: Each module independently
-- **Integration Tests**: Test component interactions
-- **E2E Tests**: Test full workflow with mock APIs
+### Rate Limiting
 
-## Trade-offs Made
+- Built-in Gmail rate limiting
+- Random delays (0.1-0.5s) prevent detection
+- Daily limits tracked
 
-1. **SQLite vs PostgreSQL**: Chose SQLite for simplicity (can upgrade)
-2. **Synchronous vs Async**: Chose sync for simplicity (can add async)
-3. **CLI vs GUI**: Started with CLI (easier to add GUI later)
-4. **Single Sheet vs Multi-Sheet**: Started with single (needs update - see below)
+### API Optimization
 
-## Current Limitation: Multi-Sheet Support
+- Pagination support (limit/offset)
+- Future: Redis caching for statistics
+- Future: Database indexes for queries
 
-The current implementation assumes a single worksheet. Your use case has multiple sheets (one per date). This needs to be addressed.
+## Migration & Backward Compatibility
 
-**Current Code**:
+The refactoring maintained:
 
-```python
-self.sheets_client = GoogleSheetsClient(Config.SPREADSHEET_ID, Config.WORKSHEET_NAME)
-rows = self.sheets_client.read_all_rows()  # Only reads one sheet
+- ✅ Database schema (no migrations needed)
+- ✅ OAuth tokens (same file locations)
+- ✅ Configuration (same `.env` format)
+- ✅ `python main.py` still works
+
+New capabilities:
+
+- ✅ `pip install -e .` package installation
+- ✅ `cv-mailer` global command
+- ✅ REST API with OpenAPI docs
+- ✅ Organized directories (`data/`, `logs/`, `assets/`)
+
+## Documentation Architecture
+
+```
+docs/
+├── README.md (overview)
+├── QUICK_START.md (5-min setup)
+├── SETUP_GUIDE.md (detailed setup)
+├── API_GUIDE.md (REST API docs)
+├── GOOGLE_SHEETS_TEMPLATE.md (sheet format)
+├── EMAIL_TEMPLATE_SAMPLES.md (examples)
+├── OAUTH_FIX.md (troubleshooting)
+└── design/
+    ├── ARCHITECTURE.md (this file)
+    ├── DESIGN_EXPLANATION.md (comprehensive)
+    ├── FEATURE_SUGGESTIONS.md (roadmap)
+    └── refactoring_modernization/ (migration)
 ```
 
-**Needed Change**:
+## Trade-offs & Decisions
 
-- List all sheets
-- Process each sheet
-- Track which sheet each application came from
+| Decision | Chosen | Alternative | Reasoning |
+|----------|--------|-------------|-----------|
+| Database | SQLite | PostgreSQL | Simplicity, portability (can upgrade) |
+| Sync/Async | Sync CLI, Async API | All async | Simpler CLI, API ready for async |
+| Packaging | `src/` layout | Flat structure | Professional, testable, standard |
+| API Framework | FastAPI | Flask/Django | Modern, async, auto-docs |
+| Templates | Jinja2 | String format | Powerful, industry standard |
+| Auth | OAuth2 | API keys | Secure, user-owned credentials |
 
-This is a straightforward extension that maintains the architecture.
+## Summary
+
+The CV Mailer architecture is:
+
+### Production-Ready
+
+- ✅ Modern Python packaging
+- ✅ Professional structure
+- ✅ Comprehensive error handling
+- ✅ Logging and monitoring
+
+### Maintainable
+
+- ✅ Clear separation of concerns
+- ✅ SOLID principles
+- ✅ Design patterns
+- ✅ Well-documented
+
+### Extensible
+
+- ✅ Easy to add features
+- ✅ Multiple presentation layers (CLI + API)
+- ✅ Ready for web UI
+- ✅ Ready for mobile app
+
+### Scalable
+
+- ✅ Can handle thousands of applications
+- ✅ Can upgrade to PostgreSQL
+- ✅ Can add caching/queue
+- ✅ Can add authentication
+
+The architecture supports both **current needs** (automated email sending) and **future growth** (web UI, mobile app, advanced analytics).

@@ -50,6 +50,7 @@ SHEET_NAME_FILTER=
 ### Unique Row Identification
 
 To handle duplicate row numbers across sheets, the system now uses:
+
 - Format: `{sheet_name}_{row_number}`
 - Example: `2024-01-15_5` means row 5 in sheet "2024-01-15"
 
@@ -58,6 +59,7 @@ This ensures each application is uniquely tracked even if row numbers overlap.
 ### Database Changes
 
 The `JobApplication` model now includes:
+
 - `spreadsheet_row_id`: Changed from Integer to String (supports "sheet_row" format)
 - `sheet_name`: New field storing the sheet name
 
@@ -72,6 +74,7 @@ The `JobApplication` model now includes:
 ### Status Updates
 
 When updating the "Status" column:
+
 - The system automatically detects which sheet the row came from
 - Updates the correct cell in the correct sheet
 - Handles column name variations ("Status", "status", etc.)
@@ -79,6 +82,7 @@ When updating the "Status" column:
 ## Migration Notes
 
 If you have an existing database:
+
 - The `spreadsheet_row_id` column type changed from Integer to String
 - You may need to migrate existing data
 - New applications will use the new format automatically
@@ -89,4 +93,3 @@ If you have an existing database:
 2. **Same Column Structure**: All sheets should have the same column headers
 3. **Filter When Needed**: Use `SHEET_NAME_FILTER` to process only recent sheets
 4. **Backup First**: Always backup your spreadsheet before first run
-

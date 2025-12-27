@@ -7,21 +7,25 @@ The application now supports multiple recruiters in a single cell, which is perf
 The application can parse recruiters from a cell in the following formats:
 
 ### Format 1: Multiple Recruiters (Your Format)
+
 ```
 Salman Khan - salman.khan@presight.ai, Alia Alkatheeri - alia.alkatheeri@presight.ai, Hamda Alkhamisi - hamda.alkhamisi@presight.ai, Max Baillon - max.baillon@presight.ai
 ```
 
 ### Format 2: Single Recruiter
+
 ```
 John Doe - john.doe@company.com
 ```
 
 ### Format 3: Just Email
+
 ```
 recruiter@company.com
 ```
 
 ### Format 4: Name Only (will skip if no email)
+
 ```
 John Doe
 ```
@@ -59,6 +63,7 @@ For each row in your Google Sheet:
 ## Example Workflow
 
 ### Input (Google Sheet Row)
+
 ```
 Company: Presight
 Position: Software Engineer
@@ -66,9 +71,10 @@ Recruiter Name: Salman Khan - salman.khan@presight.ai, Alia Alkatheeri - alia.al
 ```
 
 ### Processing
+
 1. Parser extracts 2 recruiters:
-   - Salman Khan (salman.khan@presight.ai)
-   - Alia Alkatheeri (alia.alkatheeri@presight.ai)
+   - Salman Khan (<salman.khan@presight.ai>)
+   - Alia Alkatheeri (<alia.alkatheeri@presight.ai>)
 
 2. Creates JobApplication:
    - Company: Presight
@@ -120,7 +126,7 @@ Follow-up emails also support multiple recruiters:
 
 ## Tips
 
-1. **Consistent Format**: Use "Name - email@domain.com" format for best results
+1. **Consistent Format**: Use "Name - <email@domain.com>" format for best results
 2. **Separate by Comma**: Use commas to separate multiple recruiters
 3. **Check Before Sending**: Use `--dry-run` to see which recruiters will receive emails
 4. **Review Logs**: Check the logs to see how many recruiters were parsed from each row
@@ -129,10 +135,10 @@ Follow-up emails also support multiple recruiters:
 
 | Company Name | Position | Recruiter Name | Status |
 |-------------|----------|----------------|--------|
-| Presight | Software Engineer | Salman Khan - salman.khan@presight.ai, Alia Alkatheeri - alia.alkatheeri@presight.ai | |
-| Google | Data Scientist | John Doe - john@google.com | |
+| Presight | Software Engineer | Salman Khan - <salman.khan@presight.ai>, Alia Alkatheeri - <alia.alkatheeri@presight.ai> | |
+| Google | Data Scientist | John Doe - <john@google.com> | |
 
 The application will:
+
 - Parse 2 recruiters from Presight row → send 2 emails
 - Parse 1 recruiter from Google row → send 1 email
-

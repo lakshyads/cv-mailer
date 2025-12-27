@@ -1,5 +1,9 @@
 # Google Sheets Template Guide
 
+Reference guide for setting up your Google Sheet with job applications.
+
+> 📖 **Setup**: See [Quick Start](QUICK_START.md) or [Complete Setup Guide](SETUP_GUIDE.md)
+
 ## Required Columns
 
 Your Google Sheet should have the following columns (column names are case-insensitive and flexible):
@@ -134,9 +138,54 @@ The application will automatically update the `Status` column with:
 3. **Add notes**: You can add additional columns for your own tracking (they'll be ignored by the app)
 4. **Backup**: Keep a backup of your sheet before running the application for the first time
 
+## Multi-Sheet Support
+
+The application supports processing multiple sheets in a single spreadsheet:
+
+**Enable Multi-Sheet Mode** (`.env`):
+
+```env
+PROCESS_ALL_SHEETS=true
+SHEET_NAME_FILTER=2024  # Optional: filter by sheet name pattern
+```
+
+**Benefits**:
+
+- Organize applications by date (e.g., "2024-01-15", "2024-01-20")
+- Keep historical data separated
+- Each row uniquely tracked as `{sheet_name}_{row_number}`
+
+**Example Spreadsheet Structure**:
+
+```
+My Job Applications
+├── 2024-01-15 (sheet)
+├── 2024-01-20 (sheet)
+└── 2024-02-01 (sheet)
+```
+
+All sheets must use the same column structure.
+
+## Multi-Recruiter Support
+
+Contact multiple recruiters for the same job:
+
+**Format** (in Recruiter Names column):
+
+```
+Alice Johnson - alice@company.com, Bob Smith - bob@company.com
+```
+
+**Features**:
+
+- Send personalized emails to each recruiter
+- Track each separately in database
+- Automatic duplicate prevention
+- Individual follow-up tracking
+
 ## Customizing Column Names
 
-If your sheet uses different column names, you can modify the column mapping in `main.py` in the `process_new_applications` method around line 80-90.
+If your sheet uses different column names, you can modify the column mapping in `src/cv_mailer/cli/app.py` in the `process_new_applications` method.
 
 Example modification:
 
@@ -144,3 +193,6 @@ Example modification:
 company_name = row.get('Company', row.get('company_name', ''))
 position = row.get('Job Title', row.get('position', ''))
 ```
+
+**Note**: With the new package structure, the file is now located at:
+`src/cv_mailer/cli/app.py` (instead of `main.py` at root)
