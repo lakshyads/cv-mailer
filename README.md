@@ -15,6 +15,7 @@ cv-mailer                     # Start sending emails
 
 ## ✨ Features
 
+- 🌐 **Web Dashboard** - Modern React UI for managing applications (NEW!)
 - 📊 **Google Sheets Integration** - Read job applications from spreadsheets
 - 📧 **Gmail Integration** - Send emails with built-in rate limiting
 - 🔄 **Follow-up Management** - Automatic follow-ups based on your schedule
@@ -23,7 +24,7 @@ cv-mailer                     # Start sending emails
 - 📝 **Email Templates**: Professional email templates for first contact and follow-ups
 - 👥 **Multi-Recruiter Support** - Contact multiple recruiters per job
 - 📑 **Multi-Sheet Support** - Organize applications across multiple sheets
-- 🚀 **REST API** - FastAPI-based API ready for web UI development
+- 🚀 **REST API** - FastAPI-based API with OpenAPI docs
 - 📦 **Modern Package** - Proper Python packaging with pip installation
 
 ## 📚 Documentation
@@ -36,9 +37,10 @@ cv-mailer                     # Start sending emails
 
 ### Usage
 
+- **[Web Dashboard Guide](docs/WEB_DASHBOARD_GUIDE.md)** - Web UI setup and usage (NEW!)
 - **[API Guide](docs/API_GUIDE.md)** - Complete REST API documentation
 - **[Email Templates](docs/EMAIL_TEMPLATE_SAMPLES.md)** - Sample email templates
-- **[OAuth Troubleshooting](docs/OAUTH_FIX.md)** - Fix authentication issues
+- **[OAuth Troubleshooting](docs/fix_enhancements/OAUTH_FIX.md)** - Fix authentication issues
 
 ### Architecture
 
@@ -104,7 +106,23 @@ cv-mailer-api             # Start REST API
 # Visit http://localhost:8000/docs for interactive docs
 ```
 
-See [Quick Start Guide](docs/QUICK_START.md) for examples and [API Guide](docs/API_GUIDE.md) for API endpoints.
+### Web Dashboard
+
+> Start the API first, then run the dashboard
+
+```bash
+# Terminal 1: Start API
+source venv/bin/activate
+cv-mailer-api
+
+# Terminal 2: Start Dashboard
+cd frontend
+npm install  # First time only
+npm run dev
+# Visit http://localhost:3000
+```
+
+See [Web Dashboard Guide](docs/WEB_DASHBOARD_GUIDE.md) for complete instructions.
 
 ## 🔧 Configuration
 
