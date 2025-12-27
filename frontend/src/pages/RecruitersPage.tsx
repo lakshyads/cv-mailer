@@ -57,20 +57,20 @@ export default function RecruitersPage() {
                 <Link
                   key={recruiter.id}
                   to={`/recruiters/${recruiter.id}`}
-                  className="block rounded-lg border p-4 transition-colors hover:bg-gray-50"
+                  className="block rounded-xl border p-5 transition-all hover:shadow-md hover:border-primary/50 group"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-full bg-primary/10 p-2">
-                      <User className="h-5 w-5 text-primary" />
+                  <div className="flex items-start gap-4">
+                    <div className="rounded-full bg-gradient-to-br from-primary to-purple-600 p-3 shadow-lg">
+                      <User className="h-5 w-5 text-white" />
                     </div>
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <h3 className="font-semibold truncate">{recruiter.name}</h3>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Mail className="h-3 w-3" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <h3 className="font-bold group-hover:text-primary transition-colors truncate">{recruiter.name}</h3>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Mail className="h-3.5 w-3.5 flex-shrink-0" />
                         <span className="truncate">{recruiter.email}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Briefcase className="h-3 w-3" />
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                        <Briefcase className="h-3.5 w-3.5 flex-shrink-0" />
                         <span>
                           {recruiter.applications_count || 0} application
                           {recruiter.applications_count !== 1 ? 's' : ''}

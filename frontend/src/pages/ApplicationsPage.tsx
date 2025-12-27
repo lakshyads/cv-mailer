@@ -59,28 +59,28 @@ export default function ApplicationsPage() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 md:flex-row">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
             {/* Search */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 placeholder="Search by company or position..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="h-11 pl-10 text-base"
               />
             </div>
 
             {/* Status Filter */}
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2 md:w-48">
+              <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <select
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
                   setPage(0);
                 }}
-                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-11 flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
               >
                 <option value="">All Statuses</option>
                 {STATUS_OPTIONS.map((status) => (
@@ -115,44 +115,47 @@ export default function ApplicationsPage() {
               {searchQuery ? 'No applications found matching your search.' : 'No applications found.'}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {applications.map((app) => (
                 <Link
                   key={app.id}
                   to={`/applications/${app.id}`}
-                  className="block rounded-lg border p-4 transition-colors hover:bg-gray-50"
+                  className="block rounded-xl border p-5 transition-all hover:shadow-md hover:border-primary/50 group"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0 space-y-2">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg">{app.company_name}</h3>
+                        <h3 className="font-bold text-lg group-hover:text-primary transition-colors truncate">{app.company_name}</h3>
                         {app.job_posting_url && (
                           <a
-                            href={app.job_posting_url}
+                            href={app.job_posting_url.startsWith('http') ? app.job_posting_url : `https://${app.job_posting_url}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="text-blue-600 hover:text-blue-700"
+                            className="text-primary hover:text-primary/80 flex-shrink-0"
                           >
                             <ExternalLink className="h-4 w-4" />
                           </a>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">{app.position}</p>
+                      <p className="text-sm text-foreground/80 truncate">{app.position}</p>
                       {app.location && (
-                        <p className="text-xs text-muted-foreground">{app.location}</p>
+                        <p className="text-xs text-muted-foreground truncate">{app.location}</p>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
-                        <span>Created: {formatDate(app.created_at)}</span>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
+                        <span>Created {formatDate(app.created_at)}</span>
                         {app.applied_at && (
-                          <span>Applied: {formatDate(app.applied_at)}</span>
+                          <span>Applied {formatDate(app.applied_at)}</span>
                         )}
-                        {app.emails_count !== undefined && (
-                          <span>{app.emails_count} email{app.emails_count !== 1 ? 's' : ''}</span>
+                        {app.emails_count !== undefined && app.emails_count > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {app.emails_count}
+                          </span>
                         )}
                       </div>
                     </div>
-                    <div className="ml-4">
+                    <div className="flex-shrink-0">
                       <StatusBadge status={app.status} />
                     </div>
                   </div>

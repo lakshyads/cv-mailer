@@ -1,8 +1,8 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Users, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Users, Menu, X, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useTheme } from '@/hooks/useTheme';
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,92 +17,127 @@ const navigation = [
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar */}
-      <div
-        className={cn(
-          'fixed inset-0 z-50 bg-gray-900/50 lg:hidden',
-          sidebarOpen ? 'block' : 'hidden'
-        )}
-        onClick={() => setSidebarOpen(false)}
-      />
+    <div className="flex h-screen bg-background">
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-      <div
+      {/* Sidebar */}
+      <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 transform bg-white shadow-lg transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-auto',
+          'fixed inset-y-0 left-0 z-50 w-64 transform bg-card border-r transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        {/* Sidebar header */}
-        <div className="flex h-16 items-center justify-between border-b px-6">
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-lg">CV</span>
-            </div>
-            <span className="text-xl font-bold">CV Mailer</span>
+        <div className="flex h-full flex-col">
+          {/* Logo */}
+          <div className="flex h-16 items-center justify-between px-6 border-b">
+            <Link to="/dashboard" className="flex items-center space-x-3" onClick={() => setSidebarOpen(false)}>
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-lg">CM</span>
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                CV Mailer
+              </span>
+            </Link>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-2 rounded-lg hover:bg-accent"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            className="lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
 
-        {/* Navigation */}
-        <nav className="mt-6 px-3">
-          {navigation.map((item) => {
-            const isActive = location.pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  'flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                )}
-                onClick={() => setSidebarOpen(false)}
+          {/* Navigation */}
+          <nav className="flex-1 space-y-1 px-3 py-6">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href || 
+                (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200',
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Footer */}
+          <div className="border-t p-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div>
+                <p className="font-medium text-foreground">CV Mailer</p>
+                <p>v1.0.0</p>
+              </div>
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-accent transition-colors"
+                title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
               >
-                <item.icon className="h-5 w-5" />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Sidebar footer */}
-        <div className="absolute bottom-0 left-0 right-0 border-t p-4">
-          <div className="text-xs text-gray-500">
-            <p className="font-medium">CV Mailer Dashboard</p>
-            <p>v1.0.0</p>
+                {theme === 'light' ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </aside>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="sticky top-0 z-10 flex h-16 items-center border-b bg-white px-4 shadow-sm lg:px-8">
+        <header className="flex h-16 items-center gap-4 border-b bg-card/50 backdrop-blur-sm px-6">
           <button
-            className="lg:hidden"
             onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-accent"
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-5 w-5" />
           </button>
-          <div className="flex-1 lg:ml-0 ml-4">
-            <h1 className="text-xl font-semibold">
-              {navigation.find((item) => location.pathname.startsWith(item.href))?.name || 'CV Mailer'}
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold">
+              {navigation.find((item) => 
+                location.pathname === item.href || 
+                (item.href !== '/dashboard' && location.pathname.startsWith(item.href))
+              )?.name || 'CV Mailer'}
             </h1>
           </div>
-        </div>
+          <button
+            onClick={toggleTheme}
+            className="hidden lg:flex p-2 rounded-lg hover:bg-accent transition-colors"
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          >
+            {theme === 'light' ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5" />
+            )}
+          </button>
+        </header>
 
         {/* Page content */}
-        <main className="p-4 lg:p-8">
-          {children}
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="mx-auto max-w-7xl">
+            {children}
+          </div>
         </main>
       </div>
     </div>

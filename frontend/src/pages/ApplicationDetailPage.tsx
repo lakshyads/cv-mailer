@@ -63,15 +63,15 @@ export default function ApplicationDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-start gap-4">
         <Link to="/applications">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h2 className="text-3xl font-bold tracking-tight">{application.company_name}</h2>
-          <p className="text-muted-foreground">{application.position}</p>
+          <p className="text-lg text-muted-foreground mt-1">{application.position}</p>
         </div>
         <StatusBadge status={application.status} />
       </div>
@@ -111,12 +111,13 @@ export default function ApplicationDetailPage() {
                   <div>
                     <p className="text-sm font-medium">Job Posting</p>
                     <a
-                      href={application.job_posting_url}
+                      href={application.job_posting_url.startsWith('http') ? application.job_posting_url : `https://${application.job_posting_url}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline"
+                      className="text-sm text-primary hover:underline flex items-center gap-1"
                     >
                       View Posting
+                      <ExternalLink className="h-3 w-3" />
                     </a>
                   </div>
                 </div>
@@ -164,41 +165,49 @@ export default function ApplicationDetailPage() {
           {/* Email History */}
           <Card>
             <CardHeader>
-              <CardTitle>Email History</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Email History</CardTitle>
+                <span className="text-sm text-muted-foreground">{emails.length} email{emails.length !== 1 ? 's' : ''}</span>
+              </div>
             </CardHeader>
             <CardContent>
               {emails.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">
-                  No emails sent yet.
-                </p>
+                <div className="text-center py-12 text-muted-foreground">
+                  <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No emails sent yet.</p>
+                  <p className="text-sm mt-1">Use CLI to send emails to this application.</p>
+                </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {emails.map((email) => (
-                    <div key={email.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <p className="font-medium">{email.subject}</p>
+                    <div key={email.id} className="border rounded-xl p-4 hover:shadow-sm transition-shadow">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start gap-2 mb-2">
+                            <Mail className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold truncate">{email.subject}</p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                To: {email.recipient_name} 
+                                <span className="text-xs ml-1">({email.recipient_email})</span>
+                              </p>
+                            </div>
                           </div>
-                          <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                            <p>
-                              To: {email.recipient_name} ({email.recipient_email})
-                            </p>
-                            <p>Type: {capitalizeFirst(email.email_type.replace('_', ' '))}</p>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground ml-6">
+                            <span>{capitalizeFirst(email.email_type.replace('_', ' '))}</span>
                             {email.is_follow_up && (
-                              <p>Follow-up #{email.follow_up_number}</p>
+                              <span className="text-primary font-medium">Follow-up #{email.follow_up_number}</span>
                             )}
-                            <p>Sent: {formatDateTime(email.sent_at)}</p>
+                            <span>{formatDateTime(email.sent_at)}</span>
                           </div>
                         </div>
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold flex-shrink-0 ${
                             email.status === 'sent'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                               : email.status === 'failed'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
                           }`}
                         >
                           {capitalizeFirst(email.status)}
