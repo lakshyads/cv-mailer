@@ -1,19 +1,21 @@
 """
 Email template system for first contact and follow-up emails.
 """
+
 import logging
 from jinja2 import Template
-from typing import Dict, Optional
-from datetime import datetime
-from config import Config
+from typing import Optional
+
+from cv_mailer.config import Config
 
 logger = logging.getLogger(__name__)
 
-class EmailTemplate:
+
+class EmailTemplateService:
     """Email template manager."""
-    
+
     FIRST_CONTACT_SUBJECT = "Application: {{ position }} - {{ company_name }}"
-    
+
     FIRST_CONTACT_TEMPLATE = """
         <!DOCTYPE html>
         <html>
@@ -25,7 +27,7 @@ class EmailTemplate:
                 <p>Hi {{ recruiter_name or 'Hiring Manager' }},</p>
                 
                 <p>
-                    I’m reaching out regarding the <strong>{{ position }}</strong> role at 
+                    I'm reaching out regarding the <strong>{{ position }}</strong> role at 
                     <strong>{{ company_name }}</strong>{% if location %} ({{ location }}){% endif %} 
                     listed <a href="{{ job_posting_url }}">here</a>. 
                     I currently lead the design and modernization of core services used at scale, 
@@ -34,10 +36,10 @@ class EmailTemplate:
                 </p>
 
                 <p>
-                    At PayPal, I’ve been leading a team of 5 engineers on core platform services, 
+                    At PayPal, I've been leading a team of 5 engineers on core platform services, 
                     scaling APIs to handle 125M+ requests per day 
                     while achieving P95 latencies under 14ms. 
-                    I’ve driven system modernization initiatives, introduced multi-vendor strategies, 
+                    I've driven system modernization initiatives, introduced multi-vendor strategies, 
                     and improved platform reliability and cost efficiency. 
                     Previously, I led cloud automation efforts that reduced time-to-market 
                     for analytics workloads to under 3 days and delivered $10M+ in cloud cost savings 
@@ -46,10 +48,10 @@ class EmailTemplate:
 
                 <p>
                     I enjoy operating at the intersection of architecture, execution, and mentorship, 
-                    and I’m motivated by building systems that scale with both product growth 
+                    and I'm motivated by building systems that scale with both product growth 
                     and engineering teams. 
-                    I’d welcome the opportunity to discuss how my experience could contribute to 
-                    {{ company_name }}’s platform and long-term technical roadmap.
+                    I'd welcome the opportunity to discuss how my experience could contribute to 
+                    {{ company_name }}'s platform and long-term technical roadmap.
                 </p>
 
                 <p>
@@ -70,7 +72,7 @@ class EmailTemplate:
     """
 
     FOLLOW_UP_SUBJECT = "Following up: {{ position }} - {{ company_name }}"
-    
+
     FOLLOW_UP_TEMPLATE = """
         <!DOCTYPE html>
         <html>
@@ -90,7 +92,7 @@ class EmailTemplate:
                 </p>
                 
                 <p>
-                    Please let me know if there’s anything else you need from me. 
+                    Please let me know if there's anything else you need from me. 
                     Looking forward to your response.
                 </p>
                 
@@ -104,7 +106,7 @@ class EmailTemplate:
         </body>
         </html>
     """
-    
+
     @classmethod
     def render_first_contact(
         cls,
@@ -113,37 +115,37 @@ class EmailTemplate:
         position: str,
         location: Optional[str] = None,
         job_posting_url: Optional[str] = None,
-        custom_message: Optional[str] = None
+        custom_message: Optional[str] = None,
     ) -> tuple[str, str]:
         """
         Render first contact email.
-        
+
         Args:
             custom_message: Optional custom message from sheet. If provided, replaces default message.
-        
+
         Returns:
             Tuple of (subject, body)
         """
         template = Template(cls.FIRST_CONTACT_TEMPLATE)
         subject_template = Template(cls.FIRST_CONTACT_SUBJECT)
-        
+
         context = {
-            'recruiter_name': recruiter_name,
-            'company_name': company_name,
-            'position': position,
-            'location': location,
-            'job_posting_url': job_posting_url,
-            'custom_message': custom_message,
-            'sender_name': Config.SENDER_NAME,
-            'linkedin_profile': getattr(Config, "LINKEDIN_PROFILE", None),
-            'contact_information': getattr(Config, "CONTACT_INFORMATION", None)
+            "recruiter_name": recruiter_name,
+            "company_name": company_name,
+            "position": position,
+            "location": location,
+            "job_posting_url": job_posting_url,
+            "custom_message": custom_message,
+            "sender_name": Config.SENDER_NAME,
+            "linkedin_profile": getattr(Config, "LINKEDIN_PROFILE", None),
+            "contact_information": getattr(Config, "CONTACT_INFORMATION", None),
         }
-        
+
         subject = subject_template.render(**context)
         body = template.render(**context)
-        
+
         return subject, body
-    
+
     @classmethod
     def render_follow_up(
         cls,
@@ -151,32 +153,32 @@ class EmailTemplate:
         company_name: str,
         position: str,
         location: Optional[str] = None,
-        follow_up_number: int = 1
+        follow_up_number: int = 1,
     ) -> tuple[str, str]:
         """
         Render follow-up email.
-        
+
         Returns:
             Tuple of (subject, body)
         """
         template = Template(cls.FOLLOW_UP_TEMPLATE)
         subject_template = Template(cls.FOLLOW_UP_SUBJECT)
-        
+
         context = {
-            'recruiter_name': recruiter_name,
-            'company_name': company_name,
-            'position': position,
-            'location': location,
-            'sender_name': Config.SENDER_NAME,
-            'linkedin_profile': getattr(Config, "LINKEDIN_PROFILE", None),
-            'contact_information': getattr(Config, "CONTACT_INFORMATION", None)
+            "recruiter_name": recruiter_name,
+            "company_name": company_name,
+            "position": position,
+            "location": location,
+            "sender_name": Config.SENDER_NAME,
+            "linkedin_profile": getattr(Config, "LINKEDIN_PROFILE", None),
+            "contact_information": getattr(Config, "CONTACT_INFORMATION", None),
         }
-        
+
         subject = subject_template.render(**context)
         body = template.render(**context)
-        
+
         return subject, body
-    
+
     @classmethod
     def get_subject_prefix(cls, is_follow_up: bool, follow_up_number: int = 0) -> str:
         """Get subject prefix based on email type."""
@@ -186,3 +188,6 @@ class EmailTemplate:
             return "Re: Follow-up - "
         return ""
 
+
+# Backward compatibility alias
+EmailTemplate = EmailTemplateService

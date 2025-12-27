@@ -1,6 +1,7 @@
 """
 Configuration management for CV Mailer application.
 """
+
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -9,18 +10,21 @@ from typing import Optional
 # Load environment variables
 load_dotenv()
 
+
 class Config:
     """Application configuration."""
-    
+
     # Google API
     GOOGLE_CREDENTIALS_FILE: str = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
-    
+
     # Google Sheets
     SPREADSHEET_ID: str = os.getenv("SPREADSHEET_ID", "")
-    WORKSHEET_NAME: str = os.getenv("WORKSHEET_NAME", "Sheet1")  # Used if PROCESS_ALL_SHEETS is False
+    WORKSHEET_NAME: str = os.getenv(
+        "WORKSHEET_NAME", "Sheet1"
+    )  # Used if PROCESS_ALL_SHEETS is False
     PROCESS_ALL_SHEETS: bool = os.getenv("PROCESS_ALL_SHEETS", "true").lower() == "true"
     SHEET_NAME_FILTER: Optional[str] = os.getenv("SHEET_NAME_FILTER")  # Optional regex pattern
-    
+
     # Gmail
     GMAIL_USER: str = os.getenv("GMAIL_USER", "")
     SENDER_NAME: str = os.getenv("SENDER_NAME", "Job Applicant")
@@ -28,45 +32,44 @@ class Config:
     # Signature / contact (optional; used by email templates)
     LINKEDIN_PROFILE: str = os.getenv("LINKEDIN_PROFILE", "")
     CONTACT_INFORMATION: str = os.getenv("CONTACT_INFORMATION", "")
-    
+
     # Resume
     RESUME_FILE_PATH: Optional[str] = os.getenv("RESUME_FILE_PATH")
     RESUME_DRIVE_LINK: Optional[str] = os.getenv("RESUME_DRIVE_LINK")
-    
+
     # Rate Limiting
     # Delay between emails in seconds (100-500ms = 0.1-0.5 seconds)
     # This allows ~180 emails/minute, well under Gmail API per-user quota
     EMAIL_DELAY_MIN: float = float(os.getenv("EMAIL_DELAY_MIN", "0.1"))
     EMAIL_DELAY_MAX: float = float(os.getenv("EMAIL_DELAY_MAX", "0.5"))
     DAILY_EMAIL_LIMIT: int = int(os.getenv("DAILY_EMAIL_LIMIT", "50"))
-    
+
     # Follow-up
     FOLLOW_UP_DAYS: int = int(os.getenv("FOLLOW_UP_DAYS", "7"))
     MAX_FOLLOW_UPS: int = int(os.getenv("MAX_FOLLOW_UPS", "3"))
-    
+
     # Database
-    DATABASE_PATH: str = os.getenv("DATABASE_PATH", "cv_mailer.db")
-    
+    DATABASE_PATH: str = os.getenv("DATABASE_PATH", "data/cv_mailer.db")
+
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
-    LOG_FILE: str = os.getenv("LOG_FILE", "cv_mailer.log")
-    
+    LOG_FILE: str = os.getenv("LOG_FILE", "logs/cv_mailer.log")
+
     @classmethod
     def validate(cls) -> list[str]:
         """Validate configuration and return list of errors."""
         errors = []
-        
+
         if not cls.SPREADSHEET_ID:
             errors.append("SPREADSHEET_ID is required")
-        
+
         if not cls.GMAIL_USER:
             errors.append("GMAIL_USER is required")
-        
+
         if not cls.RESUME_FILE_PATH and not cls.RESUME_DRIVE_LINK:
             errors.append("Either RESUME_FILE_PATH or RESUME_DRIVE_LINK must be set")
-        
+
         if not Path(cls.GOOGLE_CREDENTIALS_FILE).exists():
             errors.append(f"Google credentials file not found: {cls.GOOGLE_CREDENTIALS_FILE}")
-        
-        return errors
 
+        return errors
