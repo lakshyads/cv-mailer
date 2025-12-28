@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { applicationsApi } from '@/api/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { StatusBadge } from '@/components/StatusBadge';
+import { ProgressTracker } from '@/components/ProgressTracker';
 import { formatDate } from '@/lib/utils';
 import { getValidNextStatuses } from '@/lib/statusTransitions';
 import { Link } from 'react-router-dom';
@@ -33,6 +34,7 @@ export default function ApplicationsPage() {
   const [page, setPage] = useState(0);
   const [actionMenuOpen, setActionMenuOpen] = useState<number | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<Record<number, string>>({});
+  const [showProgressTracker, setShowProgressTracker] = useState(true);
   const limit = 20;
   const queryClient = useQueryClient();
 
@@ -107,16 +109,29 @@ export default function ApplicationsPage() {
   };
 
   // Close menu when clicking outside
-  const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as HTMLElement;
+      // Check if click is on a menu button (MoreVertical icon)
+      const isMenuButton = target.closest('button')?.querySelector('svg');
+      // Check if click is inside any action menu
+      const isInsideMenu = target.closest('[data-action-menu]');
+
+      if (!isMenuButton && !isInsideMenu && actionMenuOpen !== null) {
         setActionMenuOpen(null);
       }
     };
+
     if (actionMenuOpen !== null) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      // Use a small delay to avoid closing immediately when opening
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 0);
+
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
     }
   }, [actionMenuOpen]);
 
@@ -145,6 +160,27 @@ export default function ApplicationsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-11 pl-10 text-base"
               />
+            </div>
+
+            {/* Show Progress Tracker Toggle */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="progress-toggle" className="text-sm font-medium cursor-pointer">
+                Show Progress Tracker
+              </label>
+              <button
+                id="progress-toggle"
+                type="button"
+                role="switch"
+                aria-checked={showProgressTracker}
+                onClick={() => setShowProgressTracker(!showProgressTracker)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${showProgressTracker ? 'bg-primary' : 'bg-muted'
+                  }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showProgressTracker ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                />
+              </button>
             </div>
 
             {/* Status Filter */}
@@ -230,22 +266,26 @@ export default function ApplicationsPage() {
                         )}
                       </div>
                     </Link>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
                       <StatusBadge status={app.status} />
-                      <div className="relative" ref={menuRef}>
+                      <div className="relative">
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
                           onClick={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             setActionMenuOpen(actionMenuOpen === app.id ? null : app.id);
                           }}
                         >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                         {actionMenuOpen === app.id && (
-                          <div className="absolute right-0 top-10 z-10 w-56 rounded-md border bg-background shadow-lg">
+                          <div
+                            data-action-menu
+                            className="absolute right-0 top-10 z-50 w-56 rounded-md border bg-background shadow-lg"
+                          >
                             <div className="p-2 space-y-1">
                               <Button
                                 variant="ghost"
@@ -306,6 +346,14 @@ export default function ApplicationsPage() {
                       </div>
                     </div>
                   </div>
+                  {showProgressTracker && (
+                    <div className="mt-4 pt-4 border-t">
+                      <ProgressTracker
+                        currentStatus={app.status}
+                        lastMainFlowStatus={app.last_main_flow_status}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

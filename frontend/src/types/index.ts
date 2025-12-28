@@ -39,6 +39,7 @@ export interface Application {
   closed_at?: string;
   recruiters?: Recruiter[];
   emails_count?: number;
+  last_main_flow_status?: JobStatus;
 }
 
 export interface Recruiter {

@@ -3,6 +3,7 @@ import { JobStatus } from '@/types';
 interface ProgressTrackerProps {
   currentStatus: JobStatus;
   className?: string;
+  lastMainFlowStatus?: JobStatus; // Last status in main flow before terminal state
 }
 
 // Main status flow (one-directional)
@@ -33,21 +34,32 @@ const STATUS_LABELS: Record<JobStatus, string> = {
   draft: 'Draft', // Legacy, not used in main flow
 };
 
-export function ProgressTracker({ currentStatus, className = '' }: ProgressTrackerProps) {
+export function ProgressTracker({ currentStatus, className = '', lastMainFlowStatus }: ProgressTrackerProps) {
   const currentIndex = STATUS_ORDER.indexOf(currentStatus);
   const isTerminal = TERMINAL_STATES.includes(currentStatus);
   const isAccepted = currentStatus === 'accepted';
   const isInMainFlow = currentIndex >= 0;
 
-  // Calculate progress width
-  let progressWidth = '0%';
-  if (isTerminal || isAccepted) {
-    // Terminal states show full progress (reached end, just different outcome)
-    progressWidth = '100%';
+  // For terminal states, determine which stages were completed
+  let completedUpToIndex = -1;
+  if (isTerminal) {
+    if (lastMainFlowStatus && STATUS_ORDER.includes(lastMainFlowStatus)) {
+      // Use provided last main flow status
+      completedUpToIndex = STATUS_ORDER.indexOf(lastMainFlowStatus);
+    } else {
+      // Infer: terminal states can only be reached from reached_out or later
+      // Default to reached_out (minimum stage for terminal states)
+      completedUpToIndex = STATUS_ORDER.indexOf('reached_out');
+    }
+  } else if (isAccepted) {
+    // Accepted means all stages completed
+    completedUpToIndex = STATUS_ORDER.length - 1;
   } else if (isInMainFlow) {
-    // Show progress up to current step
-    progressWidth = `${(currentIndex / (STATUS_ORDER.length - 1)) * 100}%`;
+    // Current status is in main flow
+    completedUpToIndex = currentIndex;
   }
+
+  const totalStages = STATUS_ORDER.length;
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -56,33 +68,63 @@ export function ProgressTracker({ currentStatus, className = '' }: ProgressTrack
         <span className="font-medium">{STATUS_LABELS[currentStatus]}</span>
       </div>
       <div className="relative">
-        {/* Progress line */}
+        {/* Progress line background - spans full width */}
         <div className="absolute top-4 left-0 right-0 h-0.5 bg-muted" />
-        <div
-          className={`absolute top-4 left-0 h-0.5 transition-all duration-300 ${
-            isTerminal ? 'bg-red-500' : isAccepted ? 'bg-green-500' : 'bg-primary'
-          }`}
-          style={{ width: progressWidth }}
-        />
         
-        {/* Status points */}
-        <div className="relative flex justify-between">
+        {/* Progress line fill - calculated to reach center of last completed circle */}
+        {completedUpToIndex >= 0 && (
+          <div
+            className={`absolute top-4 left-0 h-0.5 transition-all duration-300 ${
+              isTerminal ? 'bg-red-500' : isAccepted ? 'bg-green-500' : 'bg-primary'
+            }`}
+            style={{
+              // With justify-between: first at 0%, last at 100%, others evenly spaced
+              // Circle centers are at: index / (total - 1) * 100%
+              width: completedUpToIndex === totalStages - 1
+                ? '100%'
+                : `${(completedUpToIndex / (totalStages - 1)) * 100}%`,
+            }}
+          />
+        )}
+        
+        {/* Status points - using justify-between for edge alignment */}
+        <div className="relative flex justify-between items-start">
           {STATUS_ORDER.map((status, index) => {
-            const isActive = index <= currentIndex && isInMainFlow;
-            const isCurrent = status === currentStatus;
+            const isCompleted = index <= completedUpToIndex;
+            const isCurrent = status === currentStatus && !isTerminal;
+            
+            // Determine colors based on state
+            let bgColor = 'bg-background';
+            let borderColor = 'border-muted';
+            let textColor = 'text-muted-foreground';
+            
+            if (isCompleted) {
+              if (isTerminal) {
+                bgColor = 'bg-red-500';
+                borderColor = 'border-red-500';
+                textColor = 'text-white';
+              } else if (isAccepted) {
+                bgColor = 'bg-green-500';
+                borderColor = 'border-green-500';
+                textColor = 'text-white';
+              } else {
+                bgColor = 'bg-primary';
+                borderColor = 'border-primary';
+                textColor = 'text-primary-foreground';
+              }
+            }
             
             return (
-              <div key={status} className="flex flex-col items-center" style={{ width: `${100 / (STATUS_ORDER.length - 1)}%` }}>
+              <div 
+                key={status} 
+                className="flex flex-col items-center relative z-10"
+              >
                 <div
-                  className={`relative z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                    isCurrent
-                      ? 'bg-primary border-primary text-primary-foreground scale-110'
-                      : isActive
-                      ? 'bg-primary border-primary text-primary-foreground'
-                      : 'bg-background border-muted text-muted-foreground'
-                  }`}
+                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                    isCurrent ? 'scale-110' : ''
+                  } ${bgColor} ${borderColor} ${textColor}`}
                 >
-                  {isActive ? (
+                  {isCompleted ? (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>

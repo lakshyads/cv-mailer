@@ -138,7 +138,10 @@ export default function ApplicationDetailPage() {
       {/* Progress Tracker */}
       <Card>
         <CardContent className="pt-6">
-          <ProgressTracker currentStatus={app.status} />
+          <ProgressTracker 
+            currentStatus={app.status}
+            lastMainFlowStatus={app.last_main_flow_status}
+          />
         </CardContent>
       </Card>
 

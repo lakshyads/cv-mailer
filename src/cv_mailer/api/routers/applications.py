@@ -38,15 +38,22 @@ async def list_applications(
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
 
-    applications, total = service.list_applications(
-        status=job_status, limit=limit, offset=offset
-    )
+    applications, total = service.list_applications(status=job_status, limit=limit, offset=offset)
+
+    # Build response with last main flow status for terminal states
+    items = []
+    for app in applications:
+        response = ApplicationListResponse.from_orm(app)
+        # Get last main flow status for terminal states
+        if app.status in [JobStatus.REJECTED, JobStatus.GHOSTED, JobStatus.WITHDRAWN]:
+            response.last_main_flow_status = service.get_last_main_flow_status(app.id)
+        items.append(response)
 
     return PaginatedResponse(
         total=total,
         limit=limit,
         offset=offset,
-        items=[ApplicationListResponse.from_orm(app) for app in applications],
+        items=items,
     )
 
 
@@ -60,11 +67,20 @@ async def search_applications(
     """Search job applications by company name or position."""
     applications, total = service.search_applications(query=q, limit=limit, offset=offset)
 
+    # Build response with last main flow status for terminal states
+    items = []
+    for app in applications:
+        response = ApplicationListResponse.from_orm(app)
+        # Get last main flow status for terminal states
+        if app.status in [JobStatus.REJECTED, JobStatus.GHOSTED, JobStatus.WITHDRAWN]:
+            response.last_main_flow_status = service.get_last_main_flow_status(app.id)
+        items.append(response)
+
     return PaginatedResponse(
         total=total,
         limit=limit,
         offset=offset,
-        items=[ApplicationListResponse.from_orm(app) for app in applications],
+        items=items,
     )
 
 
@@ -80,6 +96,13 @@ async def get_application(
 
         response = ApplicationDetailResponse.from_orm(app)
         response.emails_count = emails_count
+        # Get last main flow status for terminal states
+        if app.status in [
+            JobStatus.REJECTED,
+            JobStatus.GHOSTED,
+            JobStatus.WITHDRAWN,
+        ]:
+            response.last_main_flow_status = service.get_last_main_flow_status(application_id)
 
         return response
     except ValueError as e:
@@ -110,9 +133,7 @@ async def update_application_status(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post(
-    "/applications/{application_id}/trigger-reach-out", response_model=EmailActionResponse
-)
+@router.post("/applications/{application_id}/trigger-reach-out", response_model=EmailActionResponse)
 async def trigger_reach_out(
     application_id: int,
     recruiter_id: Optional[int] = Query(None, description="Optional recruiter ID"),
@@ -141,9 +162,7 @@ async def trigger_reach_out(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post(
-    "/applications/{application_id}/trigger-follow-up", response_model=EmailActionResponse
-)
+@router.post("/applications/{application_id}/trigger-follow-up", response_model=EmailActionResponse)
 async def trigger_follow_up(
     application_id: int,
     recruiter_id: Optional[int] = Query(None, description="Optional recruiter ID"),

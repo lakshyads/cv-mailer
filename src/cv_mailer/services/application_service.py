@@ -9,7 +9,7 @@ import logging
 from typing import List, Optional, Tuple
 from datetime import datetime, timezone, timedelta
 
-from cv_mailer.core import JobApplication, JobStatus, EmailRecord
+from cv_mailer.core import JobApplication, JobStatus, EmailRecord, StatusHistory
 from cv_mailer.repositories import ApplicationRepository
 from cv_mailer.utils import get_session
 
@@ -157,6 +157,65 @@ class ApplicationService:
         logger.info(f"Updated application {application_id} status to {status.value}")
 
         return app
+
+    def get_last_main_flow_status(self, application_id: int) -> Optional[JobStatus]:
+        """
+        Get the last main flow status before terminal state.
+
+        For terminal states (rejected, ghosted, withdrawn), this returns
+        the highest main flow status that was reached before the terminal state.
+
+        Args:
+            application_id: Application ID
+
+        Returns:
+            Last main flow status, or None if not found
+        """
+        # Main flow statuses in order
+        main_flow_statuses = {
+            JobStatus.APPLIED,
+            JobStatus.REACHED_OUT,
+            JobStatus.INTERVIEW_SCHEDULED,
+            JobStatus.INTERVIEW_IN_PROGRESS,
+            JobStatus.RESULT_AWAITED,
+            JobStatus.OFFER_RECEIVED,
+            JobStatus.ACCEPTED,
+        }
+
+        # Terminal states
+        terminal_states = {
+            JobStatus.REJECTED,
+            JobStatus.GHOSTED,
+            JobStatus.WITHDRAWN,
+        }
+
+        # Get all status changes for this application
+        status_changes = (
+            self.repository.session.query(StatusHistory)
+            .filter_by(job_application_id=application_id)
+            .order_by(StatusHistory.changed_at.asc())
+            .all()
+        )
+
+        # Find the last main flow status before terminal state
+        last_main_flow = None
+        for status_change in status_changes:
+            if status_change.to_status in main_flow_statuses:
+                last_main_flow = status_change.to_status
+            elif status_change.to_status in terminal_states:
+                # Found terminal state, return the last main flow status
+                return last_main_flow
+
+        # If no terminal state found in history, check current status
+        app = self.get_application(application_id)
+        if app.status in terminal_states:
+            return last_main_flow
+
+        # If current status is in main flow, return it
+        if app.status in main_flow_statuses:
+            return app.status
+
+        return None
 
     def get_application_timeline(self, application_id: int) -> List[dict]:
         """

@@ -277,33 +277,37 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-3">
               {recentApps?.items?.map((app) => (
-                <Link
+                <div
                   key={app.id}
-                  to={`/applications/${app.id}`}
-                  className="flex items-center justify-between rounded-xl border p-4 transition-all hover:shadow-md hover:border-primary/50 group"
+                  className="rounded-xl border p-4 transition-all hover:shadow-md hover:border-primary/50 group"
                 >
-                  <div className="flex-1 space-y-1">
-                    <p className="font-semibold group-hover:text-primary transition-colors">{app.company_name}</p>
-                    <p className="text-sm text-muted-foreground">{app.position}</p>
-                    {app.location && (
-                      <p className="text-xs text-muted-foreground">{app.location}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(app.created_at)}
-                      </p>
-                      {app.emails_count !== undefined && app.emails_count > 0 && (
-                        <p className="text-xs text-muted-foreground flex items-center justify-end gap-1 mt-1">
-                          <Mail className="h-3 w-3" />
-                          {app.emails_count}
-                        </p>
+                  <Link
+                    to={`/applications/${app.id}`}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex-1 space-y-1">
+                      <p className="font-semibold group-hover:text-primary transition-colors">{app.company_name}</p>
+                      <p className="text-sm text-muted-foreground">{app.position}</p>
+                      {app.location && (
+                        <p className="text-xs text-muted-foreground">{app.location}</p>
                       )}
                     </div>
-                    <StatusBadge status={app.status} />
-                  </div>
-                </Link>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(app.created_at)}
+                        </p>
+                        {app.emails_count !== undefined && app.emails_count > 0 && (
+                          <p className="text-xs text-muted-foreground flex items-center justify-end gap-1 mt-1">
+                            <Mail className="h-3 w-3" />
+                            {app.emails_count}
+                          </p>
+                        )}
+                      </div>
+                      <StatusBadge status={app.status} />
+                    </div>
+                  </Link>
+                </div>
               ))}
             </div>
           )}
