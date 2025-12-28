@@ -13,17 +13,21 @@ import { toast } from 'sonner';
 
 // Status colors matching our flow
 const STATUS_COLORS: Record<string, string> = {
-  applied: '#3b82f6',              // Blue - initial state
-  reached_out: '#6366f1',          // Indigo - after emails sent
-  interview_scheduled: '#8b5cf6',   // Purple - interview scheduled
-  interview_in_progress: '#a855f7', // Purple - interview in progress
+  total_applied: '#3b82f6',        // Blue - total applications applied
+  applied: '#60a5fa',              // Light blue - currently at applied
+  total_reached_out: '#6366f1',    // Indigo - total reached out
+  reached_out: '#818cf8',          // Light indigo - currently at reached out
+  total_reached_interviews: '#8b5cf6', // Purple - total reached interviews
+  interview_scheduled: '#a855f7',   // Purple - interview scheduled
+  interview_in_progress: '#b472f8', // Purple - interview in progress
   result_awaited: '#c084fc',       // Purple - waiting for result
-  offer_received: '#10b981',        // Green - offer received
+  total_offers_received: '#10b981', // Green - total offers received
+  offer_received: '#34d399',        // Light green - currently at offer received
   accepted: '#059669',              // Green - accepted (terminal positive)
   rejected: '#ef4444',              // Red - rejected (terminal negative)
   ghosted: '#f87171',               // Red - ghosted (terminal negative)
   withdrawn: '#f59e0b',             // Orange - withdrawn (terminal negative)
-  offer_rejected: '#f59e0b',        // Orange - offer rejected (terminal negative)
+  offer_rejected: '#eab308',        // Amber - applicant rejected offer
   draft: '#94a3b8',                 // Gray - legacy
 };
 
@@ -31,6 +35,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
   const [showInterviewTooltip, setShowInterviewTooltip] = useState(false);
+  const [showOfferTooltip, setShowOfferTooltip] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: stats, isLoading } = useQuery({
@@ -77,7 +82,7 @@ export default function DashboardPage() {
   }
 
   // Prepare data for charts - ordered by logical flow
-  // Initial stages
+  // Initial stages (currently at status)
   const initialStatuses = ['applied', 'reached_out'];
   // Interview process statuses
   const interviewStatuses = ['interview_scheduled', 'interview_in_progress', 'result_awaited'];
@@ -91,15 +96,65 @@ export default function DashboardPage() {
   // All main flow statuses
   const mainFlowStatuses = [...initialStatuses, ...interviewStatuses, ...offerStatuses];
 
-  // Chart data in logical order: initial → interview → offer → after offer → early termination
-  const chartOrder = [...initialStatuses, ...interviewStatuses, ...offerStatuses, ...afterOfferStatuses, ...earlyTerminalStatuses];
+  // Chart data in logical order: 
+  // total applied → currently applied → total reached out → currently reached out → 
+  // total reached interviews → interview stages → total offers received → offer stages → 
+  // after offer → early termination
+  const chartOrder = [
+    'total_applied', // Special: total applications applied
+    'applied', // Currently at applied
+    'total_reached_out', // Special: total applications reached out
+    'reached_out', // Currently at reached out
+    'total_reached_interviews', // Special: total reached interviews
+    ...interviewStatuses,
+    ...earlyTerminalStatuses,
+    'total_offers_received', // Special: total offers received
+    ...offerStatuses,
+    ...afterOfferStatuses,
+  ];
 
-  const statusBarData = chartOrder.map((statusKey) => ({
-    status: capitalizeFirst(statusKey.replace(/_/g, ' ')),
-    statusKey,
-    count: (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0,
-  })).filter((item) => {
-    // Always show main flow statuses, only show terminal if count > 0
+  const statusBarData = chartOrder.map((statusKey) => {
+    if (statusKey === 'total_applied') {
+      return {
+        status: 'Total Applied',
+        statusKey: 'total_applied',
+        count: stats.total_applications_applied ?? stats.total_applications ?? 0,
+      };
+    }
+    if (statusKey === 'total_reached_out') {
+      return {
+        status: 'Total Reached Out',
+        statusKey: 'total_reached_out',
+        count: stats.applications_reached_out ?? 0,
+      };
+    }
+    if (statusKey === 'total_reached_interviews') {
+      return {
+        status: 'Total Reached Interviews',
+        statusKey: 'total_reached_interviews',
+        count: stats.applications_reached_interviews ?? 0,
+      };
+    }
+    if (statusKey === 'total_offers_received') {
+      return {
+        status: 'Total Offers Received',
+        statusKey: 'total_offers_received',
+        count: stats.applications_reached_offers ?? 0,
+      };
+    }
+    return {
+      status: capitalizeFirst(statusKey.replace(/_/g, ' ')),
+      statusKey,
+      count: (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0,
+    };
+  }).filter((item) => {
+    // Always show special totals and main flow statuses, only show terminal if count > 0
+    if (item.statusKey === 'total_applied' ||
+      item.statusKey === 'total_reached_out' ||
+      item.statusKey === 'total_reached_interviews' ||
+      item.statusKey === 'total_offers_received') {
+      return true; // Always show totals
+    }
     return mainFlowStatuses.includes(item.statusKey) ||
       (afterOfferStatuses.includes(item.statusKey) && item.count > 0) ||
       (earlyTerminalStatuses.includes(item.statusKey) && item.count > 0);
@@ -158,8 +213,8 @@ export default function DashboardPage() {
       </Card>
 
       {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-visible">
-        <Card className="border-l-4 border-l-primary">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6 overflow-visible">
+        <Card className="border-l-4 border-l-primary lg:col-span-1">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="space-y-2">
@@ -173,7 +228,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-blue-500 lg:col-span-1">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="space-y-2">
@@ -187,7 +242,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-l-4 border-l-purple-500 lg:col-span-1">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="space-y-2">
@@ -202,7 +257,7 @@ export default function DashboardPage() {
         </Card>
 
         <Card
-          className="border-l-4 border-l-green-500 relative cursor-help overflow-visible"
+          className="border-l-4 border-l-green-500 relative cursor-help overflow-visible lg:col-span-1"
           onMouseEnter={() => setShowInterviewTooltip(true)}
           onMouseLeave={() => setShowInterviewTooltip(false)}
         >
@@ -214,8 +269,8 @@ export default function DashboardPage() {
                   <Info className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <p className="text-3xl font-bold">
-                  {(stats.applications_reached_out ?? 0) > 0
-                    ? Math.round(((stats.applications_reached_interviews ?? 0) / (stats.applications_reached_out ?? 1)) * 100)
+                  {(stats.total_applications_applied ?? stats.total_applications ?? 0) > 0
+                    ? Math.round(((stats.applications_reached_interviews ?? 0) / (stats.total_applications_applied ?? stats.total_applications ?? 1)) * 100)
                     : 0}%
                 </p>
               </div>
@@ -270,8 +325,76 @@ export default function DashboardPage() {
                     <span>{stats.applications_reached_interviews ?? 0}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground text-xs">
-                    <span>Out of Reached Out:</span>
-                    <span>{stats.applications_reached_out ?? 0}</span>
+                    <span>Out of Total Applied:</span>
+                    <span>{stats.total_applications_applied ?? stats.total_applications ?? 0}</span>
+                  </div>
+                </div>
+              </div>
+              {/* Arrow pointer */}
+              <div className="absolute bottom-full left-6 mb-0">
+                <div className="w-3 h-3 bg-popover border-l border-t border-border rotate-45"></div>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        <Card
+          className="border-l-4 border-l-emerald-500 relative cursor-help overflow-visible lg:col-span-2"
+          onMouseEnter={() => setShowOfferTooltip(true)}
+          onMouseLeave={() => setShowOfferTooltip(false)}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-muted-foreground">Offer Rate</p>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <p className="text-3xl font-bold">
+                      {(stats.applications_reached_interviews ?? 0) > 0
+                        ? Math.round(((stats.applications_reached_offers ?? 0) / (stats.applications_reached_interviews ?? 1)) * 100)
+                        : 0}%
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      of interviews
+                    </p>
+                  </div>
+                  <div className="h-8 w-px bg-border"></div>
+                  <div className="flex-1">
+                    <p className="text-3xl font-bold">
+                      {stats.total_applications > 0
+                        ? Math.round(((stats.applications_reached_offers ?? 0) / stats.total_applications) * 100)
+                        : 0}%
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      of total
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center ml-4">
+                <TrendingUp className="h-6 w-6 text-emerald-500" />
+              </div>
+            </div>
+          </CardContent>
+          {showOfferTooltip && (
+            <div className="absolute top-full left-0 mt-2 z-[100] w-72 p-3 bg-popover border border-border rounded-lg shadow-xl text-sm pointer-events-none">
+              <div className="space-y-2">
+                <p className="font-semibold mb-2">Offer Rate Details</p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span>Total Reached Offers:</span>
+                    <span className="font-medium">{stats.applications_reached_offers ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Out of Reached Interviews:</span>
+                    <span>{stats.applications_reached_interviews ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Out of Total Applications:</span>
+                    <span>{stats.total_applications}</span>
                   </div>
                 </div>
               </div>
@@ -291,14 +414,18 @@ export default function DashboardPage() {
             <CardTitle>Application Status Overview</CardTitle>
           </CardHeader>
           <CardContent className="pb-2">
-            <div className="h-[468px]">
+            <div className="h-[606px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={statusBarData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+                <BarChart data={statusBarData} margin={{ top: 10, right: 20, left: 10, bottom: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
                   <XAxis
                     dataKey="status"
                     className="text-xs"
-                    tick={{ fill: 'currentColor', className: 'fill-muted-foreground', fontSize: 11 }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    tick={{ fill: 'currentColor', className: 'fill-muted-foreground', fontSize: 10 }}
                   />
                   <YAxis
                     className="text-xs"
@@ -334,43 +461,87 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Initial Stages */}
+              {/* Applied Summary */}
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                  Initial Stages
+                  Applied Summary
                 </h4>
-                <div className="space-y-2">
-                  {initialStatuses.map((statusKey) => {
-                    const count = (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
-                    return (
-                      <div key={statusKey} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-3 w-3 rounded-full"
-                            style={{ backgroundColor: STATUS_COLORS[statusKey] || '#94a3b8' }}
-                          />
-                          <span className="text-sm font-medium">
-                            {capitalizeFirst(statusKey.replace(/_/g, ' '))}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold">{count}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({stats.total_applications > 0 ? Math.round((count / stats.total_applications) * 100) : 0}%)
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="space-y-2 pl-4 border-l-2 border-l-blue-500/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Total Applied</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold">{stats.total_applications_applied ?? stats.total_applications ?? 0}</span>
+                      <span className="text-xs text-muted-foreground">
+                        (100% of total)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: STATUS_COLORS['applied'] || '#60a5fa' }}
+                      />
+                      <span className="text-sm font-medium">Currently at Applied</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold">{stats.applications_currently_applied ?? 0}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({(stats.total_applications_applied ?? stats.total_applications ?? 0) > 0 ? Math.round(((stats.applications_currently_applied ?? 0) / (stats.total_applications_applied ?? stats.total_applications ?? 1)) * 100) : 0}% of total applied)
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Interview Process */}
+              {/* Reached Out Summary */}
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                  Interview Process
+                  Reached Out Summary
+                </h4>
+                <div className="space-y-2 pl-4 border-l-2 border-l-indigo-500/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Total Reached Out</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold">{stats.applications_reached_out ?? 0}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({(stats.total_applications_applied ?? stats.total_applications ?? 0) > 0 ? Math.round(((stats.applications_reached_out ?? 0) / (stats.total_applications_applied ?? stats.total_applications ?? 1)) * 100) : 0}% of total applied)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: STATUS_COLORS['reached_out'] || '#818cf8' }}
+                      />
+                      <span className="text-sm font-medium">Currently at Reached Out</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold">{stats.applications_currently_reached_out ?? 0}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({(stats.applications_reached_out ?? 0) > 0 ? Math.round(((stats.applications_currently_reached_out ?? 0) / (stats.applications_reached_out ?? 1)) * 100) : 0}% of total reached out)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Interview Summary */}
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  Interview Summary
                 </h4>
                 <div className="space-y-2 pl-4 border-l-2 border-l-purple-500/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Total Reached Interviews</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold">{stats.applications_reached_interviews ?? 0}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({(stats.total_applications_applied ?? stats.total_applications ?? 0) > 0 ? Math.round(((stats.applications_reached_interviews ?? 0) / (stats.total_applications_applied ?? stats.total_applications ?? 1)) * 100) : 0}% of total applied)
+                      </span>
+                    </div>
+                  </div>
                   {interviewStatuses.map((statusKey) => {
                     const count = (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
                     return (
@@ -396,12 +567,23 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Offer Stage */}
+              {/* Offer Summary */}
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                  Offer Stage
+                  Offer Summary
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-2 pl-4 border-l-2 border-l-green-500/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Total Offers Received</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold">{stats.applications_reached_offers ?? 0}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({stats.total_applications > 0 ? Math.round(((stats.applications_reached_offers ?? 0) / stats.total_applications) * 100) : 0}% of total)
+                      </span>
+                    </div>
+                  </div>
                   {offerStatuses.map((statusKey) => {
                     const count = (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
                     return (
@@ -424,42 +606,31 @@ export default function DashboardPage() {
                       </div>
                     );
                   })}
+                  {afterOfferStatuses.map((statusKey) => {
+                    const count = (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
+                    if (count === 0) return null;
+                    return (
+                      <div key={statusKey} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: STATUS_COLORS[statusKey] || '#94a3b8' }}
+                          />
+                          <span className="text-sm font-medium">
+                            {capitalizeFirst(statusKey.replace(/_/g, ' '))}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold">{count}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({stats.total_applications > 0 ? Math.round((count / stats.total_applications) * 100) : 0}%)
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-
-              {/* Final Outcomes - After Offer */}
-              {(afterOfferStatuses.some(s => (stats.by_status[s as keyof typeof stats.by_status] as number) > 0)) && (
-                <div>
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                    Final Outcomes (After Offer)
-                  </h4>
-                  <div className="space-y-2 pl-4 border-l-2 border-l-green-500/30">
-                    {afterOfferStatuses.map((statusKey) => {
-                      const count = (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
-                      if (count === 0) return null;
-                      return (
-                        <div key={statusKey} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="h-3 w-3 rounded-full"
-                              style={{ backgroundColor: STATUS_COLORS[statusKey] || '#94a3b8' }}
-                            />
-                            <span className="text-sm font-medium">
-                              {capitalizeFirst(statusKey.replace(/_/g, ' '))}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold">{count}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ({stats.total_applications > 0 ? Math.round((count / stats.total_applications) * 100) : 0}%)
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
 
               {/* Final Outcomes - Early Termination */}
               {(earlyTerminalStatuses.some(s => (stats.by_status[s as keyof typeof stats.by_status] as number) > 0)) && (

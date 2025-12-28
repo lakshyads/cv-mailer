@@ -83,6 +83,10 @@ export interface Statistics {
   by_status: Record<JobStatus, number>;
   applications_reached_interviews?: number;
   applications_reached_out?: number;
+  applications_reached_offers?: number;
+  total_applications_applied?: number;
+  applications_currently_applied?: number;
+  applications_currently_reached_out?: number;
   interview_breakdown?: {
     interview_scheduled: number;
     interview_in_progress: number;

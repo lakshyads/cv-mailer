@@ -100,6 +100,7 @@ class StatisticsService:
         total_reached_interviews = apps_in_interview_stages + terminal_with_interviews
 
         # Applications that reached out (reached_out or beyond)
+        # This counts all applications that have progressed beyond "applied" status
         reached_out_statuses = [
             JobStatus.REACHED_OUT,
             JobStatus.INTERVIEW_SCHEDULED,
@@ -113,6 +114,15 @@ class StatisticsService:
             JobStatus.OFFER_REJECTED,
         ]
         total_reached_out = sum(by_status.get(status.value, 0) for status in reached_out_statuses)
+
+        # Total applications applied = all applications (since all are imported as "applied")
+        total_applications_applied = total_apps
+
+        # Applications currently at "applied" status
+        applications_currently_applied = by_status.get(JobStatus.APPLIED.value, 0)
+
+        # Applications currently at "reached_out" status
+        applications_currently_reached_out = by_status.get(JobStatus.REACHED_OUT.value, 0)
 
         # Detailed breakdown of interview stages for tooltip
         # Count rejected/ghosted/withdrawn separately for breakdown
@@ -133,7 +143,7 @@ class StatisticsService:
             .distinct()
             .count()
         )
-        
+
         ghosted_after_interview = (
             self.session.query(StatusHistory.job_application_id)
             .join(JobApplication, StatusHistory.job_application_id == JobApplication.id)
@@ -151,7 +161,7 @@ class StatisticsService:
             .distinct()
             .count()
         )
-        
+
         withdrawn_after_interview = (
             self.session.query(StatusHistory.job_application_id)
             .join(JobApplication, StatusHistory.job_application_id == JobApplication.id)
@@ -182,6 +192,40 @@ class StatisticsService:
             "withdrawn_after_interview": withdrawn_after_interview,
         }
 
+        # Calculate applications that reached offer stage
+        # This includes:
+        # 1. Applications currently in offer_received or accepted
+        # 2. Applications that are offer_rejected (they definitely got an offer)
+        # 3. Applications that are rejected/ghosted/withdrawn BUT have history showing they reached offer_received
+        offer_stage_statuses = [
+            JobStatus.OFFER_RECEIVED,
+            JobStatus.ACCEPTED,
+        ]
+
+        apps_in_offer_stages = sum(
+            by_status.get(status.value, 0) for status in offer_stage_statuses
+        ) + by_status.get(JobStatus.OFFER_REJECTED.value, 0)
+
+        # Count terminal applications that reached offer_received (check status_history)
+        terminal_with_offer = (
+            self.session.query(StatusHistory.job_application_id)
+            .join(JobApplication, StatusHistory.job_application_id == JobApplication.id)
+            .filter(
+                JobApplication.status.in_(
+                    [
+                        JobStatus.REJECTED,
+                        JobStatus.GHOSTED,
+                        JobStatus.WITHDRAWN,
+                    ]
+                )
+            )
+            .filter(StatusHistory.to_status == JobStatus.OFFER_RECEIVED)
+            .distinct()
+            .count()
+        )
+
+        total_reached_offers = apps_in_offer_stages + terminal_with_offer
+
         return {
             "total_applications": total_apps,
             "by_status": by_status,
@@ -189,6 +233,10 @@ class StatisticsService:
             "follow_ups_sent": follow_ups,
             "applications_reached_interviews": total_reached_interviews,
             "applications_reached_out": total_reached_out,
+            "applications_reached_offers": total_reached_offers,
+            "total_applications_applied": total_applications_applied,
+            "applications_currently_applied": applications_currently_applied,
+            "applications_currently_reached_out": applications_currently_reached_out,
             "interview_breakdown": interview_breakdown,
         }
 
