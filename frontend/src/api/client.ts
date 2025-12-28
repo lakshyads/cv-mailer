@@ -12,14 +12,64 @@ const api = axios.create({
 
 // Applications API
 export const applicationsApi = {
-  list: async (params?: { status?: string; limit?: number; offset?: number }) => {
-    const { data } = await api.get<PaginatedResponse<Application>>('/applications', { params });
-    return data;
-  },
+  list: async (params?: { 
+    status?: string; // Deprecated, use statuses
+    statuses?: string[]; // Array of statuses for multi-select
+    q?: string; // Search query
+    date_from?: string; // ISO date string
+    date_to?: string; // ISO date string
+    limit?: number; 
+    offset?: number;
+    sort_by?: 'created_at' | 'updated_at' | 'status';
+    order?: 'asc' | 'desc';
+  }) => {
+    // Build params manually to ensure arrays are sent correctly for FastAPI
+    const queryParams: Record<string, string | number | string[]> = {};
+    
+    if (params?.statuses && params.statuses.length > 0) {
+      // FastAPI expects multiple query params with same name: ?statuses=value1&statuses=value2
+      queryParams.statuses = params.statuses;
+    }
+    if (params?.status) {
+      queryParams.status = params.status;
+    }
+    if (params?.q) {
+      queryParams.q = params.q;
+    }
+    if (params?.date_from) {
+      queryParams.date_from = params.date_from;
+    }
+    if (params?.date_to) {
+      queryParams.date_to = params.date_to;
+    }
+    if (params?.limit !== undefined) {
+      queryParams.limit = params.limit;
+    }
+    if (params?.offset !== undefined) {
+      queryParams.offset = params.offset;
+    }
+    if (params?.sort_by) {
+      queryParams.sort_by = params.sort_by;
+    }
+    if (params?.order) {
+      queryParams.order = params.order;
+    }
 
-  search: async (query: string, limit = 50) => {
-    const { data } = await api.get<PaginatedResponse<Application>>('/applications/search', {
-      params: { q: query, limit },
+    const { data } = await api.get<PaginatedResponse<Application>>('/applications', { 
+      params: queryParams,
+      paramsSerializer: (params) => {
+        // Custom serializer to handle arrays correctly for FastAPI
+        const parts: string[] = [];
+        for (const [key, value] of Object.entries(params)) {
+          if (Array.isArray(value)) {
+            // FastAPI expects: statuses=value1&statuses=value2 (no brackets)
+            value.forEach(v => parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(v)}`));
+          } else if (value !== undefined && value !== null) {
+            parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+          }
+        }
+        return parts.join('&');
+      }
     });
     return data;
   },

@@ -37,7 +37,11 @@ export default function DashboardPage() {
 
   const { data: recentApps } = useQuery({
     queryKey: ['applications', 'recent'],
-    queryFn: () => applicationsApi.list({ limit: 5 }),
+    queryFn: () => applicationsApi.list({
+      limit: 5,
+      sort_by: 'updated_at',
+      order: 'desc'
+    }),
   });
 
   if (isLoading || !stats) {
@@ -443,40 +447,51 @@ export default function DashboardPage() {
               <p className="text-sm mt-1">Start by syncing from Google Sheets!</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {recentApps?.items?.map((app) => (
-                <div
-                  key={app.id}
-                  className="rounded-xl border p-4 transition-all hover:shadow-md hover:border-primary/50 group"
-                >
-                  <Link
-                    to={`/applications/${app.id}`}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex-1 space-y-1">
-                      <p className="font-semibold group-hover:text-primary transition-colors">{app.company_name}</p>
-                      <p className="text-sm text-muted-foreground">{app.position}</p>
-                      {app.location && (
-                        <p className="text-xs text-muted-foreground">{app.location}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(app.created_at)}
-                        </p>
-                        {app.emails_count !== undefined && app.emails_count > 0 && (
-                          <p className="text-xs text-muted-foreground flex items-center justify-end gap-1 mt-1">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-3 font-semibold text-xs">Company / Position</th>
+                    <th className="text-left py-2 px-3 font-semibold text-xs">Status</th>
+                    <th className="text-left py-2 px-3 font-semibold text-xs">Updated</th>
+                    <th className="text-left py-2 px-3 font-semibold text-xs">Emails</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentApps?.items?.map((app) => (
+                    <tr
+                      key={app.id}
+                      className="border-b hover:bg-muted/50 transition-colors group"
+                    >
+                      <td className="py-2 px-3">
+                        <Link
+                          to={`/applications/${app.id}`}
+                          className="group-hover:text-primary transition-colors"
+                        >
+                          <div className="font-semibold">{app.company_name}</div>
+                          <div className="text-sm text-muted-foreground">{app.position}</div>
+                        </Link>
+                      </td>
+                      <td className="py-2 px-3">
+                        <StatusBadge status={app.status} size="sm" />
+                      </td>
+                      <td className="py-2 px-3 text-xs text-muted-foreground">
+                        {formatDate(app.updated_at)}
+                      </td>
+                      <td className="py-2 px-3">
+                        {app.emails_count !== undefined && app.emails_count > 0 ? (
+                          <span className="flex items-center gap-1 text-xs">
                             <Mail className="h-3 w-3" />
                             {app.emails_count}
-                          </p>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
                         )}
-                      </div>
-                      <StatusBadge status={app.status} />
-                    </div>
-                  </Link>
-                </div>
-              ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

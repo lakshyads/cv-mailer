@@ -103,5 +103,7 @@ export interface PaginatedResponse<T> {
   limit: number;
   offset: number;
   items: T[];
+  sort_by?: string | null;
+  order?: string | null;
 }
 

@@ -16,6 +16,8 @@ class PaginatedResponse(BaseModel, Generic[T]):
     limit: int
     offset: int
     items: List[T]
+    sort_by: Optional[str] = None
+    order: Optional[str] = None
 
 
 class TimelineEvent(BaseModel):

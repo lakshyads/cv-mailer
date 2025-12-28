@@ -38,6 +38,8 @@ class ApplicationResponse(BaseModel):
 class ApplicationListResponse(ApplicationResponse):
     """Application in list responses."""
 
+    updated_at: datetime
+    emails_count: int = 0
     last_main_flow_status: Optional[JobStatus] = None
 
 

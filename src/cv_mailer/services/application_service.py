@@ -54,40 +54,72 @@ class ApplicationService:
     def list_applications(
         self,
         status: Optional[JobStatus] = None,
+        statuses: Optional[List[JobStatus]] = None,
+        search: Optional[str] = None,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
         limit: int = 50,
         offset: int = 0,
+        sort_by: Optional[str] = None,
+        order: Optional[str] = None,
     ) -> Tuple[List[JobApplication], int]:
         """
-        List applications with filtering and pagination.
+        List applications with filtering, searching, pagination, and sorting.
 
         Args:
-            status: Optional status filter
+            status: Optional single status filter (for backward compatibility)
+            statuses: Optional list of statuses to filter by
+            search: Optional search term for company name or position
+            date_from: Optional start date for filtering by updated_at
+            date_to: Optional end date for filtering by updated_at
             limit: Maximum results
             offset: Pagination offset
+            sort_by: Field to sort by (created_at, updated_at, status)
+            order: Sort order (asc, desc)
 
         Returns:
             Tuple of (applications, total_count)
         """
-        return self.repository.find_all(status=status, limit=limit, offset=offset)
+        return self.repository.find_all(
+            status=status,
+            statuses=statuses,
+            search_term=search,
+            date_from=date_from,
+            date_to=date_to,
+            limit=limit, 
+            offset=offset,
+            sort_by=sort_by,
+            order=order
+        )
 
     def search_applications(
         self,
         query: str,
         limit: int = 50,
         offset: int = 0,
+        sort_by: Optional[str] = None,
+        order: Optional[str] = None,
     ) -> Tuple[List[JobApplication], int]:
         """
-        Search applications by company name or position.
+        Search applications by company name or position with optional sorting.
 
         Args:
             query: Search term
             limit: Maximum results
             offset: Pagination offset
+            sort_by: Field to sort by (created_at, updated_at, status)
+            order: Sort order (asc, desc)
 
         Returns:
             Tuple of (applications, total_count)
         """
-        return self.repository.search(search_term=query, limit=limit, offset=offset)
+        return self.repository.search(
+            search_term=query, 
+            limit=limit, 
+            offset=offset,
+            sort_by=sort_by,
+            order=order
+        )
 
     def update_status(
         self,
