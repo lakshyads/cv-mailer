@@ -26,6 +26,7 @@ const STATUS_OPTIONS: JobStatus[] = [
   'ghosted',
   'accepted',
   'withdrawn',
+  'offer_rejected',
 ];
 
 export default function ApplicationsPage() {

@@ -21,22 +21,11 @@ const STATUS_COLORS: Record<string, string> = {
   rejected: '#ef4444',              // Red - rejected (terminal negative)
   ghosted: '#f87171',               // Red - ghosted (terminal negative)
   withdrawn: '#f59e0b',             // Orange - withdrawn (terminal negative)
+  offer_rejected: '#f59e0b',        // Orange - offer rejected (terminal negative)
   draft: '#94a3b8',                 // Gray - legacy
 };
 
-// Status order matching our flow
-const STATUS_ORDER: string[] = [
-  'applied',
-  'reached_out',
-  'interview_scheduled',
-  'interview_in_progress',
-  'result_awaited',
-  'offer_received',
-  'accepted',
-  'rejected',
-  'ghosted',
-  'withdrawn',
-];
+// Status order is now defined inline in the component for better organization
 
 export default function DashboardPage() {
   const [showInterviewTooltip, setShowInterviewTooltip] = useState(false);
@@ -55,19 +44,38 @@ export default function DashboardPage() {
     return <LoadingScreen />;
   }
 
-  // Prepare data for charts - ordered by status flow
-  // Show all main flow statuses (applied through offer_received), only show terminal states if count > 0
-  const mainFlowStatuses = ['applied', 'reached_out', 'interview_scheduled', 'interview_in_progress', 'result_awaited', 'offer_received'];
-  const terminalStatuses = ['accepted', 'rejected', 'ghosted', 'withdrawn'];
+  // Prepare data for charts - ordered by logical flow
+  // Initial stages
+  const initialStatuses = ['applied', 'reached_out'];
+  // Interview process statuses
+  const interviewStatuses = ['interview_scheduled', 'interview_in_progress', 'result_awaited'];
+  // Offer stage
+  const offerStatuses = ['offer_received'];
+  // Terminal states after offer (only show if count > 0)
+  const afterOfferStatuses = ['accepted', 'offer_rejected'];
+  // Terminal states that can happen earlier (only show if count > 0)
+  const earlyTerminalStatuses = ['rejected', 'ghosted', 'withdrawn'];
 
-  const statusBarData = STATUS_ORDER.map((statusKey) => ({
+  // All main flow statuses
+  const mainFlowStatuses = [...initialStatuses, ...interviewStatuses, ...offerStatuses];
+
+  // Chart data in logical order: initial → interview → offer → after offer → early termination
+  const chartOrder = [...initialStatuses, ...interviewStatuses, ...offerStatuses, ...afterOfferStatuses, ...earlyTerminalStatuses];
+
+  const statusBarData = chartOrder.map((statusKey) => ({
     status: capitalizeFirst(statusKey.replace(/_/g, ' ')),
     statusKey,
     count: (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0,
   })).filter((item) => {
     // Always show main flow statuses, only show terminal if count > 0
-    return mainFlowStatuses.includes(item.statusKey) || (terminalStatuses.includes(item.statusKey) && item.count > 0);
+    return mainFlowStatuses.includes(item.statusKey) ||
+      (afterOfferStatuses.includes(item.statusKey) && item.count > 0) ||
+      (earlyTerminalStatuses.includes(item.statusKey) && item.count > 0);
   });
+
+  // Calculate max count for Y-axis domain to reduce white space
+  const maxCount = Math.max(...statusBarData.map(item => item.count), 1);
+  const yAxisDomain = [0, Math.max(maxCount + Math.ceil(maxCount * 0.2), 1)]; // Add 20% padding, minimum 1
 
   return (
     <div className="space-y-6">
@@ -163,9 +171,21 @@ export default function DashboardPage() {
                     <span>Accepted:</span>
                     <span className="font-medium">{stats.interview_breakdown.accepted || 0}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span>Offer Rejected:</span>
+                    <span className="font-medium">{stats.interview_breakdown.offer_rejected || 0}</span>
+                  </div>
                   <div className="flex justify-between border-t pt-1.5 mt-1.5 text-muted-foreground">
-                    <span>Rejected/Ghosted (after interview):</span>
+                    <span>Rejected (after interview):</span>
                     <span className="font-medium">{stats.interview_breakdown.rejected_after_interview || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Ghosted (after interview):</span>
+                    <span className="font-medium">{stats.interview_breakdown.ghosted_after_interview || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Withdrawn (after interview):</span>
+                    <span className="font-medium">{stats.interview_breakdown.withdrawn_after_interview || 0}</span>
                   </div>
                   <div className="flex justify-between border-t pt-1.5 mt-1.5 font-semibold">
                     <span>Total Reached Interviews:</span>
@@ -192,35 +212,40 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>Application Status Overview</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={statusBarData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
-                <XAxis
-                  dataKey="status"
-                  className="text-xs"
-                  tick={{ fill: 'currentColor', className: 'fill-muted-foreground' }}
-                />
-                <YAxis
-                  className="text-xs"
-                  tick={{ fill: 'currentColor', className: 'fill-muted-foreground' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                  }}
-                  labelStyle={{ color: 'hsl(var(--foreground))' }}
-                />
-                <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                  {statusBarData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.statusKey] || '#3b82f6'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="pb-2">
+            <div className="h-[468px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={statusBarData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
+                  <XAxis
+                    dataKey="status"
+                    className="text-xs"
+                    tick={{ fill: 'currentColor', className: 'fill-muted-foreground', fontSize: 11 }}
+                  />
+                  <YAxis
+                    className="text-xs"
+                    tick={{ fill: 'currentColor', className: 'fill-muted-foreground', fontSize: 11 }}
+                    domain={yAxisDomain}
+                    allowDecimals={false}
+                    width={30}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                    }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                  />
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                    {statusBarData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.statusKey] || '#3b82f6'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -230,24 +255,167 @@ export default function DashboardPage() {
             <CardTitle>Status Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {statusBarData.map((item) => (
-                <div key={item.statusKey} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: STATUS_COLORS[item.statusKey] }}
-                    />
-                    <span className="text-sm font-medium">{item.status}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold">{item.count}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({Math.round((item.count / stats.total_applications) * 100)}%)
-                    </span>
+            <div className="space-y-4">
+              {/* Initial Stages */}
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  Initial Stages
+                </h4>
+                <div className="space-y-2">
+                  {initialStatuses.map((statusKey) => {
+                    const count = (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
+                    return (
+                      <div key={statusKey} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: STATUS_COLORS[statusKey] || '#94a3b8' }}
+                          />
+                          <span className="text-sm font-medium">
+                            {capitalizeFirst(statusKey.replace(/_/g, ' '))}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold">{count}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({stats.total_applications > 0 ? Math.round((count / stats.total_applications) * 100) : 0}%)
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Interview Process */}
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  Interview Process
+                </h4>
+                <div className="space-y-2 pl-4 border-l-2 border-l-purple-500/30">
+                  {interviewStatuses.map((statusKey) => {
+                    const count = (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
+                    return (
+                      <div key={statusKey} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: STATUS_COLORS[statusKey] || '#94a3b8' }}
+                          />
+                          <span className="text-sm font-medium">
+                            {capitalizeFirst(statusKey.replace(/_/g, ' '))}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold">{count}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({stats.total_applications > 0 ? Math.round((count / stats.total_applications) * 100) : 0}%)
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Offer Stage */}
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  Offer Stage
+                </h4>
+                <div className="space-y-2">
+                  {offerStatuses.map((statusKey) => {
+                    const count = (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
+                    return (
+                      <div key={statusKey} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: STATUS_COLORS[statusKey] || '#94a3b8' }}
+                          />
+                          <span className="text-sm font-medium">
+                            {capitalizeFirst(statusKey.replace(/_/g, ' '))}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold">{count}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({stats.total_applications > 0 ? Math.round((count / stats.total_applications) * 100) : 0}%)
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Final Outcomes - After Offer */}
+              {(afterOfferStatuses.some(s => (stats.by_status[s as keyof typeof stats.by_status] as number) > 0)) && (
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                    Final Outcomes (After Offer)
+                  </h4>
+                  <div className="space-y-2 pl-4 border-l-2 border-l-green-500/30">
+                    {afterOfferStatuses.map((statusKey) => {
+                      const count = (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
+                      if (count === 0) return null;
+                      return (
+                        <div key={statusKey} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-3 w-3 rounded-full"
+                              style={{ backgroundColor: STATUS_COLORS[statusKey] || '#94a3b8' }}
+                            />
+                            <span className="text-sm font-medium">
+                              {capitalizeFirst(statusKey.replace(/_/g, ' '))}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold">{count}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({stats.total_applications > 0 ? Math.round((count / stats.total_applications) * 100) : 0}%)
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              ))}
+              )}
+
+              {/* Final Outcomes - Early Termination */}
+              {(earlyTerminalStatuses.some(s => (stats.by_status[s as keyof typeof stats.by_status] as number) > 0)) && (
+                <div>
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                    Final Outcomes (Early Termination)
+                  </h4>
+                  <div className="space-y-2 pl-4 border-l-2 border-l-red-500/30">
+                    {earlyTerminalStatuses.map((statusKey) => {
+                      const count = (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
+                      if (count === 0) return null;
+                      return (
+                        <div key={statusKey} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-3 w-3 rounded-full"
+                              style={{ backgroundColor: STATUS_COLORS[statusKey] || '#94a3b8' }}
+                            />
+                            <span className="text-sm font-medium">
+                              {capitalizeFirst(statusKey.replace(/_/g, ' '))}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold">{count}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({stats.total_applications > 0 ? Math.round((count / stats.total_applications) * 100) : 0}%)
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

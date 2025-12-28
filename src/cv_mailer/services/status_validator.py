@@ -35,18 +35,19 @@ class StatusValidator:
             JobStatus.OFFER_RECEIVED,
             JobStatus.REJECTED,
             JobStatus.GHOSTED,
-            JobStatus.WITHDRAWN,
+            # WITHDRAWN not allowed here - too close to offer stage
         },
         JobStatus.OFFER_RECEIVED: {
             JobStatus.ACCEPTED,
-            JobStatus.REJECTED,
-            JobStatus.WITHDRAWN,
+            JobStatus.OFFER_REJECTED,  # Applicant rejects/declines the offer
+            # WITHDRAWN not allowed - use OFFER_REJECTED instead
         },
         # Terminal states - cannot transition from these
         JobStatus.ACCEPTED: set(),
         JobStatus.REJECTED: set(),
         JobStatus.GHOSTED: set(),
         JobStatus.WITHDRAWN: set(),
+        JobStatus.OFFER_REJECTED: set(),
     }
 
     @classmethod

@@ -147,6 +147,7 @@ class ApplicationService:
             JobStatus.GHOSTED,
             JobStatus.ACCEPTED,
             JobStatus.WITHDRAWN,
+            JobStatus.OFFER_REJECTED,
         ]:
             app.closed_at = datetime.now(timezone.utc)
         elif app.closed_at:
@@ -187,6 +188,7 @@ class ApplicationService:
             JobStatus.REJECTED,
             JobStatus.GHOSTED,
             JobStatus.WITHDRAWN,
+            JobStatus.OFFER_REJECTED,
         }
 
         # Get all status changes for this application

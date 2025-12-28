@@ -29,9 +29,10 @@ class JobStatus(str, Enum):
     ACCEPTED = "accepted"
     
     # Final states (negative)
-    REJECTED = "rejected"
+    REJECTED = "rejected"  # Rejected by company/interviewer
     GHOSTED = "ghosted"
     WITHDRAWN = "withdrawn"
+    OFFER_REJECTED = "offer_rejected"  # Applicant rejected/declined the offer
 
 
 class EmailType(str, Enum):

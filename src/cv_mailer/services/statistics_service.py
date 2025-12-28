@@ -64,15 +64,25 @@ class StatisticsService:
         ]
 
         # Count applications currently in interview stages or beyond
+        # Also include offer_rejected since they definitely had interviews (got an offer)
         apps_in_interview_stages = sum(
             by_status.get(status.value, 0) for status in interview_stage_statuses
-        )
+        ) + by_status.get(JobStatus.OFFER_REJECTED.value, 0)
 
-        # Count rejected/ghosted applications that reached interviews (check status_history)
-        rejected_ghosted_with_interviews = (
+        # Count rejected/ghosted/withdrawn applications that reached interviews (check status_history)
+        terminal_with_interviews = (
             self.session.query(StatusHistory.job_application_id)
             .join(JobApplication, StatusHistory.job_application_id == JobApplication.id)
-            .filter(JobApplication.status.in_([JobStatus.REJECTED, JobStatus.GHOSTED]))
+            .filter(
+                JobApplication.status.in_(
+                    [
+                        JobStatus.REJECTED,
+                        JobStatus.GHOSTED,
+                        JobStatus.WITHDRAWN,
+                        JobStatus.OFFER_REJECTED,
+                    ]
+                )
+            )
             .filter(
                 StatusHistory.to_status.in_(
                     [
@@ -87,7 +97,7 @@ class StatisticsService:
             .count()
         )
 
-        total_reached_interviews = apps_in_interview_stages + rejected_ghosted_with_interviews
+        total_reached_interviews = apps_in_interview_stages + terminal_with_interviews
 
         # Applications that reached out (reached_out or beyond)
         reached_out_statuses = [
@@ -100,17 +110,76 @@ class StatisticsService:
             JobStatus.REJECTED,
             JobStatus.GHOSTED,
             JobStatus.WITHDRAWN,
+            JobStatus.OFFER_REJECTED,
         ]
         total_reached_out = sum(by_status.get(status.value, 0) for status in reached_out_statuses)
 
         # Detailed breakdown of interview stages for tooltip
+        # Count rejected/ghosted/withdrawn separately for breakdown
+        rejected_after_interview = (
+            self.session.query(StatusHistory.job_application_id)
+            .join(JobApplication, StatusHistory.job_application_id == JobApplication.id)
+            .filter(JobApplication.status == JobStatus.REJECTED)
+            .filter(
+                StatusHistory.to_status.in_(
+                    [
+                        JobStatus.INTERVIEW_SCHEDULED,
+                        JobStatus.INTERVIEW_IN_PROGRESS,
+                        JobStatus.RESULT_AWAITED,
+                        JobStatus.OFFER_RECEIVED,
+                    ]
+                )
+            )
+            .distinct()
+            .count()
+        )
+        
+        ghosted_after_interview = (
+            self.session.query(StatusHistory.job_application_id)
+            .join(JobApplication, StatusHistory.job_application_id == JobApplication.id)
+            .filter(JobApplication.status == JobStatus.GHOSTED)
+            .filter(
+                StatusHistory.to_status.in_(
+                    [
+                        JobStatus.INTERVIEW_SCHEDULED,
+                        JobStatus.INTERVIEW_IN_PROGRESS,
+                        JobStatus.RESULT_AWAITED,
+                        JobStatus.OFFER_RECEIVED,
+                    ]
+                )
+            )
+            .distinct()
+            .count()
+        )
+        
+        withdrawn_after_interview = (
+            self.session.query(StatusHistory.job_application_id)
+            .join(JobApplication, StatusHistory.job_application_id == JobApplication.id)
+            .filter(JobApplication.status == JobStatus.WITHDRAWN)
+            .filter(
+                StatusHistory.to_status.in_(
+                    [
+                        JobStatus.INTERVIEW_SCHEDULED,
+                        JobStatus.INTERVIEW_IN_PROGRESS,
+                        JobStatus.RESULT_AWAITED,
+                        JobStatus.OFFER_RECEIVED,
+                    ]
+                )
+            )
+            .distinct()
+            .count()
+        )
+
         interview_breakdown = {
             "interview_scheduled": by_status.get(JobStatus.INTERVIEW_SCHEDULED.value, 0),
             "interview_in_progress": by_status.get(JobStatus.INTERVIEW_IN_PROGRESS.value, 0),
             "result_awaited": by_status.get(JobStatus.RESULT_AWAITED.value, 0),
             "offer_received": by_status.get(JobStatus.OFFER_RECEIVED.value, 0),
             "accepted": by_status.get(JobStatus.ACCEPTED.value, 0),
-            "rejected_after_interview": rejected_ghosted_with_interviews,
+            "offer_rejected": by_status.get(JobStatus.OFFER_REJECTED.value, 0),
+            "rejected_after_interview": rejected_after_interview,
+            "ghosted_after_interview": ghosted_after_interview,
+            "withdrawn_after_interview": withdrawn_after_interview,
         }
 
         return {

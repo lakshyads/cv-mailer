@@ -9,7 +9,8 @@ export type JobStatus =
   | 'rejected'
   | 'ghosted'
   | 'accepted'
-  | 'withdrawn';
+  | 'withdrawn'
+  | 'offer_rejected';
 
 export type EmailType = 
   | 'cold_email'
@@ -88,7 +89,10 @@ export interface Statistics {
     result_awaited: number;
     offer_received: number;
     accepted: number;
+    offer_rejected: number;
     rejected_after_interview: number;
+    ghosted_after_interview: number;
+    withdrawn_after_interview: number;
   };
   most_applied_companies?: Array<{ company_name: string; count: number }>;
   recent_applications?: Application[];

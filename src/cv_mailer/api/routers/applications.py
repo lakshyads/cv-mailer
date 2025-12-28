@@ -45,7 +45,12 @@ async def list_applications(
     for app in applications:
         response = ApplicationListResponse.from_orm(app)
         # Get last main flow status for terminal states
-        if app.status in [JobStatus.REJECTED, JobStatus.GHOSTED, JobStatus.WITHDRAWN]:
+        if app.status in [
+            JobStatus.REJECTED,
+            JobStatus.GHOSTED,
+            JobStatus.WITHDRAWN,
+            JobStatus.OFFER_REJECTED,
+        ]:
             response.last_main_flow_status = service.get_last_main_flow_status(app.id)
         items.append(response)
 
@@ -72,7 +77,12 @@ async def search_applications(
     for app in applications:
         response = ApplicationListResponse.from_orm(app)
         # Get last main flow status for terminal states
-        if app.status in [JobStatus.REJECTED, JobStatus.GHOSTED, JobStatus.WITHDRAWN]:
+        if app.status in [
+            JobStatus.REJECTED,
+            JobStatus.GHOSTED,
+            JobStatus.WITHDRAWN,
+            JobStatus.OFFER_REJECTED,
+        ]:
             response.last_main_flow_status = service.get_last_main_flow_status(app.id)
         items.append(response)
 
@@ -101,6 +111,7 @@ async def get_application(
             JobStatus.REJECTED,
             JobStatus.GHOSTED,
             JobStatus.WITHDRAWN,
+            JobStatus.OFFER_REJECTED,
         ]:
             response.last_main_flow_status = service.get_last_main_flow_status(application_id)
 
