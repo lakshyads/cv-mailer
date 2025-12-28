@@ -8,6 +8,7 @@ from cv_mailer.services.application_service import ApplicationService
 from cv_mailer.services.email_service import EmailService
 from cv_mailer.services.recruiter_service import RecruiterService
 from cv_mailer.services.statistics_service import StatisticsService
+from cv_mailer.services.sync_service import SyncService
 from cv_mailer.services.template_service import EmailTemplate, EmailTemplateService
 from cv_mailer.services.tracker import ApplicationTracker
 
@@ -16,6 +17,7 @@ __all__ = [
     "EmailService",
     "RecruiterService",
     "StatisticsService",
+    "SyncService",
     "EmailTemplate",
     "EmailTemplateService",
     "ApplicationTracker",  # Legacy, being phased out

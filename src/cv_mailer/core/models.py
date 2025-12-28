@@ -2,7 +2,7 @@
 Database models for tracking job applications and email communications.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column,
     Integer,
@@ -59,14 +59,16 @@ class JobApplication(Base):
     custom_message = Column(Text)  # Custom message from sheet to include in email
 
     # Status tracking
-    status = Column(
+    status: "Column[JobStatus]" = Column(
         SQLEnum(JobStatus), default=JobStatus.APPLIED
     )  # Applications from sheet are already applied
-    notes = Column(Text)
+    notes: "Column[str]" = Column(Text)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: "Column[datetime]" = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc)
+    )
     applied_at = Column(DateTime)
     closed_at = Column(DateTime)
 
@@ -103,7 +105,7 @@ class StatusHistory(Base):
     notes = Column(Text)  # Optional notes from the status change
 
     # Timestamp
-    changed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    changed_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
 
     # Relationship
     job_application = relationship("JobApplication", backref="status_history")
@@ -145,7 +147,7 @@ class EmailRecord(Base):
     follow_up_number = Column(Integer, default=0)  # 0 = first contact, 1+ = follow-up number
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     sent_at = Column(DateTime)
 
     # Relationships
@@ -168,8 +170,10 @@ class Recruiter(Base):
     email = Column(String(255), nullable=False, unique=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc)
+    )
 
     # Relationships
     job_applications = relationship(
@@ -195,7 +199,7 @@ class ResponseRecord(Base):
     responded_at = Column(DateTime)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     # Relationships
     job_application = relationship("JobApplication")

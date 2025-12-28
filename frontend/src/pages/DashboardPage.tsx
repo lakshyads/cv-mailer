@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { statisticsApi, applicationsApi } from '@/api/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { statisticsApi, applicationsApi, syncApi } from '@/api/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { LoadingScreen } from '@/components/ui/Spinner';
 import { StatusBadge } from '@/components/StatusBadge';
-import { formatDate, capitalizeFirst } from '@/lib/utils';
+import { formatDateTime, capitalizeFirst } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-import { Briefcase, Mail, TrendingUp, Clock, ArrowUpRight, Info } from 'lucide-react';
+import { Briefcase, Mail, TrendingUp, Clock, ArrowUpRight, Info, RefreshCw, Send, Eye } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { toast } from 'sonner';
 
 // Status colors matching our flow
 const STATUS_COLORS: Record<string, string> = {
@@ -29,6 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
   const [showInterviewTooltip, setShowInterviewTooltip] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ['statistics'],
@@ -42,6 +45,31 @@ export default function DashboardPage() {
       sort_by: 'updated_at',
       order: 'desc'
     }),
+  });
+
+  // Sync mutations
+  const syncApplicationsMutation = useMutation({
+    mutationFn: (dryRun: boolean) => syncApi.syncApplications(dryRun),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      toast.success(data.message || 'Applications synced successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.detail || 'Failed to sync applications');
+    },
+  });
+
+  const sendFollowUpsMutation = useMutation({
+    mutationFn: (dryRun: boolean) => syncApi.sendFollowUps(dryRun),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      toast.success(data.message || 'Follow-ups sent successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.detail || 'Failed to send follow-ups');
+    },
   });
 
   if (isLoading || !stats) {
@@ -83,6 +111,52 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Sync Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Google Sheets Sync</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => syncApplicationsMutation.mutate(false)}
+              disabled={syncApplicationsMutation.isPending}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncApplicationsMutation.isPending ? 'animate-spin' : ''}`} />
+              Sync Applications & Reach Out
+            </Button>
+            <Button
+              onClick={() => syncApplicationsMutation.mutate(true)}
+              disabled={syncApplicationsMutation.isPending}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Sync Applications
+            </Button>
+            <Button
+              onClick={() => sendFollowUpsMutation.mutate(false)}
+              disabled={sendFollowUpsMutation.isPending}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Send className={`h-4 w-4 ${sendFollowUpsMutation.isPending ? 'animate-spin' : ''}`} />
+              Send Follow-ups
+            </Button>
+            <Button
+              onClick={() => sendFollowUpsMutation.mutate(true)}
+              disabled={sendFollowUpsMutation.isPending}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Dry Run Follow-ups
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-visible">
         <Card className="border-l-4 border-l-primary">
@@ -476,7 +550,7 @@ export default function DashboardPage() {
                         <StatusBadge status={app.status} size="sm" />
                       </td>
                       <td className="py-2 px-3 text-xs text-muted-foreground">
-                        {formatDate(app.updated_at)}
+                        {formatDateTime(app.updated_at)}
                       </td>
                       <td className="py-2 px-3">
                         {app.emails_count !== undefined && app.emails_count > 0 ? (

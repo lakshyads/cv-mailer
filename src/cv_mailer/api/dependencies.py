@@ -14,6 +14,7 @@ from cv_mailer.services import (
     EmailService,
     RecruiterService,
     StatisticsService,
+    SyncService,
 )
 from cv_mailer.repositories import (
     ApplicationRepository,
@@ -88,6 +89,15 @@ def get_statistics_service(
     This is what API endpoints should use for statistics.
     """
     return StatisticsService(session=session)
+
+
+def get_sync_service() -> SyncService:
+    """
+    Get sync service.
+    
+    This is what API endpoints should use for Google Sheets sync operations.
+    """
+    return SyncService()
 
 
 # Legacy dependencies (for backward compatibility during migration)

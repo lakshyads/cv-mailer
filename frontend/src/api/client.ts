@@ -154,5 +154,34 @@ export const statisticsApi = {
   },
 };
 
+// Sync API
+export const syncApi = {
+  syncApplications: async (dryRun: boolean = false) => {
+    const { data } = await api.post<{
+      sent_count: number;
+      skipped_count: number;
+      total_rows: number;
+      errors?: string[];
+      message: string;
+    }>('/sync/applications', null, {
+      params: { dry_run: dryRun },
+    });
+    return data;
+  },
+
+  sendFollowUps: async (dryRun: boolean = false) => {
+    const { data } = await api.post<{
+      sent_count: number;
+      skipped_count: number;
+      total_needing: number;
+      errors?: string[];
+      message: string;
+    }>('/sync/follow-ups', null, {
+      params: { dry_run: dryRun },
+    });
+    return data;
+  },
+};
+
 export default api;
 

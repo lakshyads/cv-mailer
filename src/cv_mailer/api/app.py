@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from cv_mailer import __version__
-from cv_mailer.api.routers import applications, emails, recruiters, stats
+from cv_mailer.api.routers import applications, emails, recruiters, stats, sync
 from cv_mailer.utils import init_database
 from cv_mailer.config import Config
 
@@ -68,6 +68,7 @@ app.include_router(applications.router, prefix="/api/v1", tags=["applications"])
 app.include_router(emails.router, prefix="/api/v1", tags=["emails"])
 app.include_router(recruiters.router, prefix="/api/v1", tags=["recruiters"])
 app.include_router(stats.router, prefix="/api/v1", tags=["statistics"])
+app.include_router(sync.router, prefix="/api/v1", tags=["sync"])
 
 logger.info("CV Mailer API initialized")
 

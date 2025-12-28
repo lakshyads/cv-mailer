@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { applicationsApi } from '@/api/client';
+import { applicationsApi, syncApi } from '@/api/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +9,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { formatDateTime } from '@/lib/utils';
 import { getValidNextStatuses } from '@/lib/statusTransitions';
 import { Link } from 'react-router-dom';
-import { Search, Filter, ExternalLink, Mail, Send, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronRight, X, Calendar, Clock } from 'lucide-react';
+import { Search, Filter, ExternalLink, Mail, Send, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronRight, X, Calendar, Clock, RefreshCw, Eye } from 'lucide-react';
 import { ProgressTracker } from '@/components/ProgressTracker';
 import { toast } from 'sonner';
 import type { Application, JobStatus } from '@/types';
@@ -185,6 +185,33 @@ export default function ApplicationsPage() {
     },
   });
 
+  // Sync mutations
+  const syncApplicationsMutation = useMutation({
+    mutationFn: (dryRun: boolean) => syncApi.syncApplications(dryRun),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
+      toast.success(data.message || 'Applications synced successfully');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { detail?: string } } };
+      toast.error(err?.response?.data?.detail || 'Failed to sync applications');
+    },
+  });
+
+  const sendFollowUpsMutation = useMutation({
+    mutationFn: (dryRun: boolean) => syncApi.sendFollowUps(dryRun),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
+      toast.success(data.message || 'Follow-ups sent successfully');
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { detail?: string } } };
+      toast.error(err?.response?.data?.detail || 'Failed to send follow-ups');
+    },
+  });
+
   const handleQuickStatusUpdate = (appId: number, status: JobStatus) => {
     updateStatusMutation.mutate({ id: appId, status });
   };
@@ -304,6 +331,52 @@ export default function ApplicationsPage() {
           </p>
         </div>
       </div>
+
+      {/* Sync Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Google Sheets Sync</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => syncApplicationsMutation.mutate(false)}
+              disabled={syncApplicationsMutation.isPending}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncApplicationsMutation.isPending ? 'animate-spin' : ''}`} />
+              Sync Applications & Reach Out
+            </Button>
+            <Button
+              onClick={() => syncApplicationsMutation.mutate(true)}
+              disabled={syncApplicationsMutation.isPending}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Sync Applications
+            </Button>
+            <Button
+              onClick={() => sendFollowUpsMutation.mutate(false)}
+              disabled={sendFollowUpsMutation.isPending}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Send className={`h-4 w-4 ${sendFollowUpsMutation.isPending ? 'animate-spin' : ''}`} />
+              Send Follow-ups
+            </Button>
+            <Button
+              onClick={() => sendFollowUpsMutation.mutate(true)}
+              disabled={sendFollowUpsMutation.isPending}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Dry Run Follow-ups
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <Card>

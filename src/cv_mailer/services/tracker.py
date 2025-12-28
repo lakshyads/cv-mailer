@@ -67,7 +67,7 @@ class ApplicationTracker:
             app.job_posting_url = job_posting_url or app.job_posting_url
             app.expected_salary = expected_salary or app.expected_salary
             app.custom_message = custom_message or app.custom_message
-            app.updated_at = datetime.utcnow()
+            app.updated_at = datetime.now(timezone.utc)()
 
             # Update recruiters relationship
             self._link_recruiters_to_application(app, recruiters)
@@ -250,21 +250,24 @@ class ApplicationTracker:
     def can_send_follow_up(self, job_application_id: int) -> tuple[bool, str]:
         """
         Check if an application can receive a follow-up email.
-        
+
         Args:
             job_application_id: Job application ID
-            
+
         Returns:
             Tuple of (can_send: bool, reason: str)
         """
         app = self.session.query(JobApplication).get(job_application_id)
         if not app:
             return False, f"Application {job_application_id} not found"
-            
+
         # Must be in REACHED_OUT status
         if app.status != JobStatus.REACHED_OUT:
-            return False, f"Application status is {app.status.value}, must be 'reached_out' to send follow-up"
-        
+            return (
+                False,
+                f"Application status is {app.status.value}, must be 'reached_out' to send follow-up",
+            )
+
         # Get last email sent (any type)
         last_email = (
             self.session.query(EmailRecord)
@@ -272,21 +275,24 @@ class ApplicationTracker:
             .order_by(EmailRecord.sent_at.desc())
             .first()
         )
-        
+
         if not last_email or not last_email.sent_at:
             return False, "No emails have been sent for this application yet"
-        
+
         # Check if enough time has passed
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=Config.FOLLOW_UP_DAYS)
         sent_at = last_email.sent_at
         if sent_at.tzinfo is None:
             sent_at = sent_at.replace(tzinfo=timezone.utc)
-        
+
         if sent_at >= cutoff_date:
             days_since = (datetime.now(timezone.utc) - sent_at).days
             days_needed = Config.FOLLOW_UP_DAYS
-            return False, f"Not enough time has passed. Last email sent {days_since} days ago, need {days_needed} days"
-        
+            return (
+                False,
+                f"Not enough time has passed. Last email sent {days_since} days ago, need {days_needed} days",
+            )
+
         # Check if we've reached max follow-ups
         last_follow_up_number = (
             self.session.query(func.max(EmailRecord.follow_up_number))
@@ -296,12 +302,12 @@ class ApplicationTracker:
             .scalar()
             or 0
         )
-        
+
         if last_follow_up_number >= Config.MAX_FOLLOW_UPS:
             return False, f"Maximum follow-ups ({Config.MAX_FOLLOW_UPS}) already sent"
-        
+
         return True, "OK"
-    
+
     def get_next_follow_up_number(self, job_application_id: int) -> int:
         """Get the next follow-up number for a job application."""
         # EmailRecord is stored per-recipient, so counting rows breaks when an application
@@ -408,6 +414,7 @@ class ApplicationTracker:
 
         # Record status change in history before updating
         from cv_mailer.core import StatusHistory
+
         from_status = app.status
         status_history = StatusHistory(
             job_application_id=job_application_id,
