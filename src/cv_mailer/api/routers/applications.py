@@ -7,7 +7,7 @@ All business logic is in ApplicationService.
 
 import logging
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from cv_mailer.services import ApplicationService, EmailService
@@ -72,17 +72,27 @@ async def list_applications(
             status_code=400, detail=f"Invalid order: {order}. Must be one of: asc, desc"
         )
 
-    # Parse date filters
+    # Parse date filters and normalize to UTC
     date_from_dt = None
     date_to_dt = None
     if date_from:
         try:
-            date_from_dt = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+            dt = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+            # Normalize to UTC if timezone-aware, otherwise assume UTC
+            if dt.tzinfo is None:
+                date_from_dt = dt.replace(tzinfo=timezone.utc)
+            else:
+                date_from_dt = dt.astimezone(timezone.utc)
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid date_from format: {date_from}")
     if date_to:
         try:
-            date_to_dt = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+            dt = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+            # Normalize to UTC if timezone-aware, otherwise assume UTC
+            if dt.tzinfo is None:
+                date_to_dt = dt.replace(tzinfo=timezone.utc)
+            else:
+                date_to_dt = dt.astimezone(timezone.utc)
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid date_to format: {date_to}")
 

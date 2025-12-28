@@ -67,10 +67,11 @@ class ApplicationTracker:
             app.job_posting_url = job_posting_url or app.job_posting_url
             app.expected_salary = expected_salary or app.expected_salary
             app.custom_message = custom_message or app.custom_message
-            app.updated_at = datetime.now(timezone.utc)()
+            app.updated_at = datetime.now(timezone.utc)
 
             # Update recruiters relationship
             self._link_recruiters_to_application(app, recruiters)
+            self.session.commit()
             return app
 
         # Create new application (already applied to company)
@@ -84,6 +85,7 @@ class ApplicationTracker:
             expected_salary=expected_salary,
             custom_message=custom_message,
             status=JobStatus.APPLIED,  # Applications from sheet are already applied
+            applied_at=datetime.now(timezone.utc),  # Set applied_at since already applied
         )
         self.session.add(app)
         self.session.flush()  # Flush to get the ID

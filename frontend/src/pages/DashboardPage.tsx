@@ -527,7 +527,7 @@ export default function DashboardPage() {
                   <tr className="border-b">
                     <th className="text-left py-2 px-3 font-semibold text-xs">Company / Position</th>
                     <th className="text-left py-2 px-3 font-semibold text-xs">Status</th>
-                    <th className="text-left py-2 px-3 font-semibold text-xs">Updated</th>
+                    <th className="text-left py-2 px-3 font-semibold text-xs">Last Updated</th>
                     <th className="text-left py-2 px-3 font-semibold text-xs">Emails</th>
                   </tr>
                 </thead>

@@ -7,7 +7,6 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    DateTime,
     Boolean,
     Text,
     ForeignKey,
@@ -19,6 +18,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 from cv_mailer.core.enums import JobStatus, EmailType, EmailStatus
+from cv_mailer.core.types import UTCDateTime
 
 Base = declarative_base()
 
@@ -64,13 +64,15 @@ class JobApplication(Base):
     )  # Applications from sheet are already applied
     notes: "Column[str]" = Column(Text)
 
-    # Timestamps
-    created_at: "Column[datetime]" = Column(DateTime, default=datetime.now(timezone.utc))
+    # Timestamps (all stored as UTC in database)
+    created_at: "Column[datetime]" = Column(UTCDateTime, default=datetime.now(timezone.utc))
     updated_at = Column(
-        DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc)
+        UTCDateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
     )
-    applied_at = Column(DateTime)
-    closed_at = Column(DateTime)
+    applied_at = Column(UTCDateTime)
+    closed_at = Column(UTCDateTime)
 
     # Relationships
     emails = relationship(
@@ -104,8 +106,8 @@ class StatusHistory(Base):
     to_status = Column(SQLEnum(JobStatus), nullable=False)
     notes = Column(Text)  # Optional notes from the status change
 
-    # Timestamp
-    changed_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
+    # Timestamp (stored as UTC in database)
+    changed_at = Column(UTCDateTime, default=datetime.now(timezone.utc), nullable=False)
 
     # Relationship
     job_application = relationship("JobApplication", backref="status_history")
@@ -146,9 +148,9 @@ class EmailRecord(Base):
     is_follow_up = Column(Boolean, default=False)
     follow_up_number = Column(Integer, default=0)  # 0 = first contact, 1+ = follow-up number
 
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    sent_at = Column(DateTime)
+    # Timestamps (all stored as UTC in database)
+    created_at = Column(UTCDateTime, default=datetime.now(timezone.utc))
+    sent_at = Column(UTCDateTime)
 
     # Relationships
     job_application = relationship("JobApplication", back_populates="emails")
@@ -169,10 +171,12 @@ class Recruiter(Base):
     name = Column(String(255), nullable=True)
     email = Column(String(255), nullable=False, unique=True)
 
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    # Timestamps (all stored as UTC in database)
+    created_at = Column(UTCDateTime, default=datetime.now(timezone.utc))
     updated_at = Column(
-        DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc)
+        UTCDateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
     )
 
     # Relationships
@@ -196,10 +200,10 @@ class ResponseRecord(Base):
     # Response details
     response_type = Column(String(50))  # positive, negative, neutral, interview_request
     response_text = Column(Text)
-    responded_at = Column(DateTime)
+    responded_at = Column(UTCDateTime)
 
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    # Timestamps (all stored as UTC in database)
+    created_at = Column(UTCDateTime, default=datetime.now(timezone.utc))
 
     # Relationships
     job_application = relationship("JobApplication")
@@ -211,6 +215,6 @@ class DailyEmailStats(Base):
     __tablename__ = "daily_email_stats"
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, unique=True, nullable=False)
+    date = Column(UTCDateTime, unique=True, nullable=False)
     emails_sent = Column(Integer, default=0)
-    last_email_sent_at = Column(DateTime)
+    last_email_sent_at = Column(UTCDateTime)

@@ -45,7 +45,9 @@ class GmailSender:
             session = get_session()
             try:
                 today = datetime.now(timezone.utc).date()
-                today_start = datetime.combine(today, datetime.min.time())
+                today_start = datetime.combine(
+                    today, datetime.min.time()
+                ).replace(tzinfo=timezone.utc)
 
                 # Get today's stats
                 stats = (
@@ -62,7 +64,11 @@ class GmailSender:
                         return False
                 else:
                     # Create new stats record (don't commit yet, just prepare)
-                    stats = DailyEmailStats(date=datetime.now(timezone.utc), emails_sent=0)
+                    # Set date to start of today in UTC
+                    today_start_utc = datetime.combine(
+                        today, datetime.min.time()
+                    ).replace(tzinfo=timezone.utc)
+                    stats = DailyEmailStats(date=today_start_utc, emails_sent=0)
                     session.add(stats)
                     session.flush()  # Flush to get ID but don't commit yet
 
@@ -94,7 +100,9 @@ class GmailSender:
             session = get_session()
             try:
                 today = datetime.now(timezone.utc).date()
-                today_start = datetime.combine(today, datetime.min.time())
+                today_start = datetime.combine(
+                    today, datetime.min.time()
+                ).replace(tzinfo=timezone.utc)
 
                 stats = (
                     session.query(DailyEmailStats)
@@ -103,7 +111,11 @@ class GmailSender:
                 )
 
                 if not stats:
-                    stats = DailyEmailStats(date=datetime.now(timezone.utc), emails_sent=0)
+                    # Set date to start of today in UTC
+                    today_start_utc = datetime.combine(
+                        today, datetime.min.time()
+                    ).replace(tzinfo=timezone.utc)
+                    stats = DailyEmailStats(date=today_start_utc, emails_sent=0)
                     session.add(stats)
 
                 stats.emails_sent += 1
