@@ -128,28 +128,55 @@ class CVMailer:
                         skipped_count += 1
                         continue
 
-                    # Skip if already processed
-                    if status and status.lower() in ["sent", "reached_out", "applied"]:
-                        logger.info(f"Skipping row {row.get('_row_number')}: already processed")
-                        skipped_count += 1
-                        continue
-
                     # Create application using tracker (legacy)
                     sheet_name = row.get("_sheet_name", Config.WORKSHEET_NAME)
                     row_id = row.get("_row_number", 0)
                     unique_row_id = f"{sheet_name}_{row_id}"
 
-                    job_app = self.tracker.get_or_create_job_application(
-                        spreadsheet_row_id=unique_row_id,
-                        company_name=company_name,
-                        position=position,
-                        recruiters=recruiters,
-                        location=location,
-                        job_posting_url=job_posting_url,
-                        expected_salary=expected_salary,
-                        custom_message=custom_message,
-                        sheet_name=sheet_name,
+                    # Check if application already exists and has sent emails
+                    from cv_mailer.core import JobApplication, EmailRecord, EmailStatus, EmailType
+
+                    existing_app = (
+                        self.tracker.session.query(JobApplication)
+                        .filter_by(spreadsheet_row_id=unique_row_id)
+                        .first()
                     )
+
+                    if existing_app:
+                        # Check if emails have already been sent for this application
+                        sent_emails = (
+                            self.tracker.session.query(EmailRecord)
+                            .filter_by(
+                                job_application_id=existing_app.id,
+                                email_type=EmailType.FIRST_CONTACT,
+                                status=EmailStatus.SENT,
+                            )
+                            .count()
+                        )
+
+                        if sent_emails > 0:
+                            logger.info(
+                                f"Skipping row {row.get('_row_number')}: application already processed "
+                                f"({sent_emails} email(s) already sent)"
+                            )
+                            skipped_count += 1
+                            continue
+
+                        # Application exists but no emails sent - use existing
+                        job_app = existing_app
+                    else:
+                        # Create new application
+                        job_app = self.tracker.get_or_create_job_application(
+                            spreadsheet_row_id=unique_row_id,
+                            company_name=company_name,
+                            position=position,
+                            recruiters=recruiters,
+                            location=location,
+                            job_posting_url=job_posting_url,
+                            expected_salary=expected_salary,
+                            custom_message=custom_message,
+                            sheet_name=sheet_name,
+                        )
 
                     # Send emails using service
                     try:
