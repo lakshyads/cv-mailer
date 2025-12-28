@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { applicationsApi } from '@/api/client';
 import { useApplicationMutations } from '@/hooks/useApplicationMutations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -12,9 +13,7 @@ import { formatDate, formatDateTime, capitalizeFirst } from '@/lib/utils';
 import { getValidNextStatuses } from '@/lib/statusTransitions';
 import { ArrowLeft, ExternalLink, Mail, User, Calendar, MapPin, DollarSign, FileText, X, Eye, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import type { JobStatus, EmailRecord } from '@/types';
-import { ALL_JOB_STATUSES } from '@/lib/constants';
-import { extractErrorMessage } from '@/lib/errorHandling';
+import type { EmailRecord } from '@/types';
 
 export default function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -217,8 +216,8 @@ export default function ApplicationDetailPage() {
                     <div className="mt-4 flex gap-2 justify-center">
                       <Button
                         size="sm"
-                        onClick={() => triggerReachOutMutation.mutate()}
-                        disabled={triggerReachOutMutation.isPending}
+                        onClick={handleTriggerReachOut}
+                        disabled={triggerReachOut.isPending}
                       >
                         {triggerReachOut.isPending ? (
                           <>
@@ -328,12 +327,12 @@ export default function ApplicationDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Button
-                onClick={() => triggerReachOutMutation.mutate()}
-                disabled={triggerReachOutMutation.isPending}
+                onClick={handleTriggerReachOut}
+                disabled={triggerReachOut.isPending}
                 className="w-full"
                 variant="outline"
               >
-                {triggerReachOutMutation.isPending ? (
+                {triggerReachOut.isPending ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
                     Sending...

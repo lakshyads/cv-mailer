@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 
 interface StatCardProps {
   title: string;
-  value: string | number;
+  value: string | number | ReactNode;
   icon: LucideIcon;
   iconColor?: string;
   borderColor?: string;
@@ -46,11 +46,15 @@ export function StatCard({
     >
       <CardContent className="pt-6">
         <div className="flex items-center justify-between">
-          <div className="space-y-2">
+          <div className="space-y-2 flex-1">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold">{value}</p>
+            {typeof value === 'string' || typeof value === 'number' ? (
+              <p className="text-3xl font-bold">{value}</p>
+            ) : (
+              <div>{value}</div>
+            )}
           </div>
-          <div className={`h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center`}>
+          <div className={`h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ml-4`}>
             <Icon className={`h-6 w-6 ${iconColor}`} />
           </div>
         </div>
