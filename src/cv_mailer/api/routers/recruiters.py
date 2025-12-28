@@ -49,6 +49,24 @@ async def get_recruiter(
     """Get details of a specific recruiter."""
     try:
         recruiter = service.get_recruiter(recruiter_id)
-        return RecruiterDetailResponse.from_orm(recruiter)
+        
+        # Manually serialize applications since Pydantic might not handle relationship properly
+        applications = [
+            {
+                "id": app.id,
+                "company_name": app.company_name,
+                "position": app.position,
+                "status": app.status.value,
+            }
+            for app in recruiter.job_applications
+        ]
+        
+        return RecruiterDetailResponse(
+            id=recruiter.id,
+            name=recruiter.name,
+            email=recruiter.email,
+            created_at=recruiter.created_at,
+            applications=applications,
+        )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

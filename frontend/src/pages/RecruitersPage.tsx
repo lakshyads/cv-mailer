@@ -17,7 +17,7 @@ export default function RecruitersPage() {
     queryFn: () => recruitersApi.list({ limit, offset: page * limit }),
   });
 
-  const recruiters = (data?.recruiters as Recruiter[]) || [];
+  const recruiters = (data?.items as Recruiter[]) || [];
   const total = data?.total || 0;
   const totalPages = Math.ceil(total / limit);
 
