@@ -1,8 +1,9 @@
 import { Card, CardContent } from '@/components/atoms/ui/Card';
 import { Input } from '@/components/atoms/ui/Input';
+import { Button } from '@/components/atoms/ui/Button';
 import { StatusFilter } from '@/components/molecules/StatusFilter';
 import { DateFilter } from '@/components/molecules/DateFilter';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import type { JobStatus } from '@/types';
 
 type DateFilterType = 'today' | 'this_week' | 'this_month' | null;
@@ -45,7 +46,7 @@ export function ApplicationsFilters({
     <Card>
       <CardContent className="py-4">
         <div className="space-y-4">
-          {/* Top Row: Search, Progress Toggle, Status Filter */}
+          {/* Top Row: Search, Progress Toggle, Status Filter, Clear All */}
           <div className="flex flex-wrap items-center gap-4">
             {/* Search */}
             <div className="flex-1 min-w-[200px]">
@@ -88,15 +89,26 @@ export function ApplicationsFilters({
             <StatusFilter
               selectedStatuses={statusFilter}
               onStatusChange={onStatusChange}
-              onClear={hasActiveFilters ? clearAllFilters : undefined}
             />
+
+            {/* Clear All Filters Button */}
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllFilters}
+                className="h-8"
+              >
+                <X className="h-3 w-3 mr-1.5" />
+                Clear All Filters
+              </Button>
+            )}
           </div>
 
           {/* Bottom Row: Date Filters */}
           <DateFilter
             value={dateFilter}
             onChange={onDateFilterChange}
-            onClear={hasActiveFilters ? clearAllFilters : undefined}
           />
         </div>
       </CardContent>
