@@ -1,4 +1,11 @@
 import { JobStatus } from '@/types';
+import {
+  getStatusSolidBgColor,
+  getStatusSolidTextColor,
+  getStatusSolidBorderColor,
+  getStatusTerminalBgColor,
+  getStatusTerminalTextColor,
+} from '@/lib/statusColors';
 
 interface ProgressTrackerProps {
   currentStatus: JobStatus;
@@ -78,16 +85,10 @@ export function ProgressTracker({ currentStatus, className = '', lastMainFlowSta
         <div className="absolute top-4 left-0 right-0 h-0.5 bg-muted" />
 
         {/* Progress line fill - calculated to reach center of last completed circle */}
+        {/* Use the current status color for the progress line */}
         {completedUpToIndex >= 0 && (
           <div
-            className={`absolute top-4 left-0 h-0.5 transition-all duration-300 ${isOfferRejected
-              ? 'bg-orange-500'
-              : isTerminal
-                ? 'bg-red-500'
-                : isAccepted
-                  ? 'bg-green-500'
-                  : 'bg-primary'
-              }`}
+            className={`absolute top-4 left-0 h-0.5 transition-all duration-300 ${getStatusSolidBgColor(currentStatus)}`}
             style={{
               // With justify-between: first at 0%, last at 100%, others evenly spaced
               // Circle centers are at: index / (total - 1) * 100%
@@ -105,28 +106,18 @@ export function ProgressTracker({ currentStatus, className = '', lastMainFlowSta
             const isCurrent = status === currentStatus && !isTerminal;
 
             // Determine colors based on state
+            // All completed stages should use the current status color
+            // This matches the behavior of terminal states (rejected, ghosted, withdrawn, offer_rejected)
             let bgColor = 'bg-background';
             let borderColor = 'border-muted';
             let textColor = 'text-muted-foreground';
 
             if (isCompleted) {
-              if (isOfferRejected || isApplicationWithdrawn) {
-                bgColor = 'bg-orange-500';
-                borderColor = 'border-orange-500';
-                textColor = 'text-white';
-              } else if (isTerminal) {
-                bgColor = 'bg-red-500';
-                borderColor = 'border-red-500';
-                textColor = 'text-white';
-              } else if (isAccepted) {
-                bgColor = 'bg-green-500';
-                borderColor = 'border-green-500';
-                textColor = 'text-white';
-              } else {
-                bgColor = 'bg-primary';
-                borderColor = 'border-primary';
-                textColor = 'text-primary-foreground';
-              }
+              // Use the current status color for all completed stages
+              // This ensures visual consistency - all completed stages reflect the current status
+              bgColor = getStatusSolidBgColor(currentStatus);
+              borderColor = getStatusSolidBorderColor(currentStatus);
+              textColor = getStatusSolidTextColor(currentStatus);
             }
 
             return (
@@ -160,25 +151,25 @@ export function ProgressTracker({ currentStatus, className = '', lastMainFlowSta
 
       {/* Terminal states */}
       {isOfferRejected && (
-        <div className="mt-4 p-3 rounded-lg text-sm bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200">
+        <div className={`mt-4 p-3 rounded-lg text-sm ${getStatusTerminalBgColor(currentStatus)} ${getStatusTerminalTextColor(currentStatus)}`}>
           <span className="font-medium">{STATUS_LABELS[currentStatus]}</span>
           <span className="ml-2 text-xs">(Offer rejected)</span>
         </div>
       )}
       {isApplicationWithdrawn && (
-        <div className="mt-4 p-3 rounded-lg text-sm bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200">
+        <div className={`mt-4 p-3 rounded-lg text-sm ${getStatusTerminalBgColor(currentStatus)} ${getStatusTerminalTextColor(currentStatus)}`}>
           <span className="font-medium">{STATUS_LABELS[currentStatus]}</span>
           <span className="ml-2 text-xs">(Application withdrawn)</span>
         </div>
       )}
       {isTerminal && !isOfferRejected && !isApplicationWithdrawn && (
-        <div className="mt-4 p-3 rounded-lg text-sm bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200">
+        <div className={`mt-4 p-3 rounded-lg text-sm ${getStatusTerminalBgColor(currentStatus)} ${getStatusTerminalTextColor(currentStatus)}`}>
           <span className="font-medium">{STATUS_LABELS[currentStatus]}</span>
           <span className="ml-2 text-xs">(Terminal state - application closed)</span>
         </div>
       )}
       {isAccepted && (
-        <div className="mt-4 p-3 rounded-lg text-sm bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200">
+        <div className={`mt-4 p-3 rounded-lg text-sm ${getStatusTerminalBgColor(currentStatus)} ${getStatusTerminalTextColor(currentStatus)}`}>
           <span className="font-medium">{STATUS_LABELS[currentStatus]}</span>
           <span className="ml-2 text-xs">(Application completed successfully)</span>
         </div>

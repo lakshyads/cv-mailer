@@ -10,24 +10,29 @@ import { Link } from 'react-router-dom';
 import { Briefcase, Mail, TrendingUp, Clock, ArrowUpRight, Info } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-// Status colors matching our flow
+import { getStatusSolidColor } from '@/lib/statusColors';
+
+// Status colors for charts - includes special aggregate keys
+// Uses shared status colors from statusColors.ts for consistency
 const STATUS_COLORS: Record<string, string> = {
+  // Special aggregate keys (not actual statuses)
   total_applied: '#3b82f6',        // Blue - total applications applied
-  applied: '#60a5fa',              // Light blue - currently at applied
   total_reached_out: '#6366f1',    // Indigo - total reached out
-  reached_out: '#818cf8',          // Light indigo - currently at reached out
   total_reached_interviews: '#8b5cf6', // Purple - total reached interviews
-  interview_scheduled: '#a855f7',   // Purple - interview scheduled
-  interview_in_progress: '#b472f8', // Purple - interview in progress
-  result_awaited: '#c084fc',       // Purple - waiting for result
   total_offers_received: '#10b981', // Green - total offers received
-  offer_received: '#34d399',        // Light green - currently at offer received
-  accepted: '#059669',              // Green - accepted (terminal positive)
-  rejected: '#ef4444',              // Red - rejected (terminal negative)
-  ghosted: '#f87171',               // Red - ghosted (terminal negative)
-  withdrawn: '#f59e0b',             // Orange - withdrawn (terminal negative)
-  offer_rejected: '#eab308',        // Amber - applicant rejected offer
-  draft: '#94a3b8',                 // Gray - legacy
+  // Actual status colors from shared utility
+  applied: getStatusSolidColor('applied'),
+  reached_out: getStatusSolidColor('reached_out'),
+  interview_scheduled: getStatusSolidColor('interview_scheduled'),
+  interview_in_progress: getStatusSolidColor('interview_in_progress'),
+  result_awaited: getStatusSolidColor('result_awaited'),
+  offer_received: getStatusSolidColor('offer_received'),
+  accepted: getStatusSolidColor('accepted'),
+  rejected: getStatusSolidColor('rejected'),
+  ghosted: getStatusSolidColor('ghosted'),
+  withdrawn: getStatusSolidColor('withdrawn'),
+  offer_rejected: getStatusSolidColor('offer_rejected'),
+  draft: getStatusSolidColor('draft'),
 };
 
 // Status order is now defined inline in the component for better organization
@@ -44,7 +49,7 @@ export default function DashboardPage() {
   const { data: recentApps } = useQuery({
     queryKey: ['applications', 'recent'],
     queryFn: () => applicationsApi.list({
-      limit: 5,
+      limit: 10,
       sort_by: 'updated_at',
       order: 'desc'
     }),
@@ -412,7 +417,7 @@ export default function DashboardPage() {
                         className="h-3 w-3 rounded-full"
                         style={{ backgroundColor: STATUS_COLORS['applied'] || '#60a5fa' }}
                       />
-                      <span className="text-sm font-medium">Currently at Applied</span>
+                      <span className="text-sm font-medium">Only Applied</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold">{stats.applications_currently_applied ?? 0}</span>
@@ -445,7 +450,7 @@ export default function DashboardPage() {
                         className="h-3 w-3 rounded-full"
                         style={{ backgroundColor: STATUS_COLORS['reached_out'] || '#818cf8' }}
                       />
-                      <span className="text-sm font-medium">Currently at Reached Out</span>
+                      <span className="text-sm font-medium">Only Reached Out</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold">{stats.applications_currently_reached_out ?? 0}</span>
@@ -604,7 +609,7 @@ export default function DashboardPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Recent Applications</CardTitle>
+            <CardTitle>Recently Updated Applications (Top 10)</CardTitle>
             <Link
               to="/applications"
               className="text-sm font-medium text-primary hover:underline flex items-center gap-1"

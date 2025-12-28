@@ -37,10 +37,61 @@ class StatisticsService:
         total_apps = self.session.query(JobApplication).count()
 
         # Count by status
+        # SQLAlchemy's SQLEnum should handle enum conversion, but SQLite is
+        # case-sensitive. The issue: database may have uppercase values
+        # (INTERVIEW_SCHEDULED) but enum has lowercase (interview_scheduled).
+        # SQLAlchemy should convert enum values when querying, but we need to
+        # ensure proper matching.
         by_status = {}
+
+        # First, try direct enum comparison (should work if SQLAlchemy handles
+        # conversion)
         for status in JobStatus:
-            count = self.session.query(JobApplication).filter_by(status=status).count()
+            count = (
+                self.session.query(JobApplication).filter(JobApplication.status == status).count()
+            )
             by_status[status.value] = count
+
+        # If total doesn't match, there might be a case mismatch issue
+        # Get raw status values from DB and match them manually
+        if sum(by_status.values()) != total_apps:
+            logger.warning(
+                f"Status count mismatch: counted {sum(by_status.values())} "
+                f"but total is {total_apps}. "
+                f"Checking for case sensitivity issues in stored status values."
+            )
+            # Get all distinct statuses from DB as raw strings
+            from sqlalchemy import func
+
+            all_db_statuses = (
+                self.session.query(JobApplication.status, func.count(JobApplication.id))
+                .group_by(JobApplication.status)
+                .all()
+            )
+
+            # Create a mapping of lowercase status strings to enum values
+            enum_lower_map = {s.value.lower(): s for s in JobStatus}
+
+            # Match DB statuses to enum values (case-insensitive)
+            for db_status_obj, db_count in all_db_statuses:
+                # Convert SQLAlchemy enum result to string
+                db_status_str = (
+                    str(db_status_obj) if hasattr(db_status_obj, "__str__") else db_status_obj
+                )
+                db_status_lower = db_status_str.lower()
+
+                # Find matching enum
+                if db_status_lower in enum_lower_map:
+                    matching_enum = enum_lower_map[db_status_lower]
+                    # If we got 0 from enum query but DB has records, use DB
+                    # count
+                    if by_status.get(matching_enum.value, 0) == 0 and db_count > 0:
+                        logger.info(
+                            f"Found {db_count} applications with status "
+                            f"'{db_status_str}' (case mismatch) matching enum "
+                            f"'{matching_enum.value}'"
+                        )
+                        by_status[matching_enum.value] = db_count
 
         # Email statistics
         total_emails = self.session.query(EmailRecord).filter_by(status=EmailStatus.SENT).count()
