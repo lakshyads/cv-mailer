@@ -48,25 +48,7 @@ export function GoogleSheetsSync() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h3 className="text-lg font-semibold whitespace-nowrap">Google Sheets Sync</h3>
           <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => syncApplicationsMutation.mutate(false)}
-              disabled={syncApplicationsMutation.isPending}
-              className="flex items-center gap-2"
-              size="sm"
-            >
-              <RefreshCw className={`h-4 w-4 ${syncApplicationsMutation.isPending ? 'animate-spin' : ''}`} />
-              Sync Applications & Reach Out
-            </Button>
-            <Button
-              onClick={() => syncApplicationsMutation.mutate(true)}
-              disabled={syncApplicationsMutation.isPending}
-              variant="outline"
-              className="flex items-center gap-2"
-              size="sm"
-            >
-              <Eye className="h-4 w-4" />
-              Sync Applications
-            </Button>
+            {/* Send Follow-ups */}
             <Button
               onClick={() => sendFollowUpsMutation.mutate(false)}
               disabled={sendFollowUpsMutation.isPending}
@@ -77,6 +59,7 @@ export function GoogleSheetsSync() {
               <Send className={`h-4 w-4 ${sendFollowUpsMutation.isPending ? 'animate-spin' : ''}`} />
               Send Follow-ups
             </Button>
+            {/* Dry Run Follow-ups */}
             <Button
               onClick={() => sendFollowUpsMutation.mutate(true)}
               disabled={sendFollowUpsMutation.isPending}
@@ -86,6 +69,28 @@ export function GoogleSheetsSync() {
             >
               <Eye className="h-4 w-4" />
               Dry Run Follow-ups
+            </Button>
+            {/* Sync Applications */}
+            <Button
+              onClick={() => syncApplicationsMutation.mutate(false)}
+              disabled={syncApplicationsMutation.isPending}
+              variant="outline"
+              className="flex items-center gap-2"
+              size="sm"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncApplicationsMutation.isPending ? 'animate-spin' : ''}`} />
+              Sync Applications & Reach Out
+            </Button>
+            {/* Dry Run Sync Applications */}
+            <Button
+              onClick={() => syncApplicationsMutation.mutate(true)}
+              disabled={syncApplicationsMutation.isPending}
+              variant="default"
+              className="flex items-center gap-2"
+              size="sm"
+            >
+              <Eye className="h-4 w-4" />
+              Sync Applications
             </Button>
           </div>
         </div>

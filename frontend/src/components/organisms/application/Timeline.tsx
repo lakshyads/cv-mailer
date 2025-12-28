@@ -1,6 +1,6 @@
 import { TimelineEvent } from '@/types';
 import { formatDateTime } from '@/lib/utils';
-import { Mail, Send, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Mail, Send, CheckCircle, Clock } from 'lucide-react';
 
 interface TimelineProps {
   events: TimelineEvent[];

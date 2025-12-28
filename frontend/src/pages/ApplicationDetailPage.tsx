@@ -6,7 +6,7 @@ import { useApplicationMutations } from '@/hooks/useApplicationMutations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
 import { LoadingScreen } from '@/components/atoms/ui/Spinner';
 import { ProgressTracker } from '@/components/organisms/shared/ProgressTracker';
-import { Timeline } from '@/components/organisms/shared/Timeline';
+import { Timeline } from '@/components/organisms/application/Timeline';
 import { ApplicationHeader } from '@/components/organisms/application/ApplicationHeader';
 import { ApplicationDetailsCard } from '@/components/organisms/application/ApplicationDetailsCard';
 import { EmailHistoryCard } from '@/components/organisms/application/EmailHistoryCard';
