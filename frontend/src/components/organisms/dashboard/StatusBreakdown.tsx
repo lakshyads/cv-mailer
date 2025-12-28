@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
 import { CHART_STATUS_COLORS } from '@/lib/chartUtils';
 import { capitalizeFirst } from '@/lib/utils';
 import type { Statistics } from '@/types';

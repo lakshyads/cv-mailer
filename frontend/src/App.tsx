@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import Layout from './components/Layout';
+import { ErrorBoundary } from './components/templates/ErrorBoundary';
+import Layout from './components/templates/Layout';
 import DashboardPage from './pages/DashboardPage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import ApplicationDetailPage from './pages/ApplicationDetailPage';

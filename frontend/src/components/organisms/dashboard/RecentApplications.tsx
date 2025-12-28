@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { ApplicationTableRow } from '@/components/applications/ApplicationTableRow';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
+import { ApplicationsTableRow } from '@/components/organisms/applications/ApplicationsTableRow';
 import { Link } from 'react-router-dom';
 import { Briefcase, ArrowUpRight } from 'lucide-react';
 import type { Application } from '@/types';
@@ -17,7 +17,12 @@ export function RecentApplications({ applications }: RecentApplicationsProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Recent Applications</CardTitle>
+          <CardTitle>
+            Recently Updated Applications
+            <span className="text-sm font-medium flex items-center gap-1">
+              (Top {applications?.length} by last updated)
+            </span>
+          </CardTitle>
           <Link
             to="/applications"
             className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
@@ -43,19 +48,20 @@ export function RecentApplications({ applications }: RecentApplicationsProps) {
                     Company / Position
                   </th>
                   <th className="text-left py-2 px-3 font-semibold text-xs">Status</th>
+                  <th className="text-left py-2 px-3 font-semibold text-xs">Created At</th>
                   <th className="text-left py-2 px-3 font-semibold text-xs">Last Updated</th>
                   <th className="text-left py-2 px-3 font-semibold text-xs">Emails</th>
                 </tr>
               </thead>
               <tbody>
                 {applications.map((app) => (
-                  <ApplicationTableRow
+                  <ApplicationsTableRow
                     key={app.id}
                     application={app}
                     size="sm"
-                    showCreatedAt={false}
+                    showCreatedAt={true}
                     showActions={false}
-                    showLocation={false}
+                    showLocation={true}
                     showJobUrl={false}
                   />
                 ))}

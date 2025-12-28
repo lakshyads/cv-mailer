@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { StatCard } from '@/components/StatCard';
-import { Tooltip } from '@/components/Tooltip';
+import { StatCard } from '@/components/molecules/StatCard';
+import { Tooltip } from '@/components/molecules/Tooltip';
 import { Briefcase, Mail, TrendingUp, Clock } from 'lucide-react';
 import type { Statistics } from '@/types';
 

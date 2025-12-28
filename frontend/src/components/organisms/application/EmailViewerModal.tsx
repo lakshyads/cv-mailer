@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
+import { Button } from '@/components/atoms/ui/Button';
 import { X } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
 import type { EmailRecord } from '@/types';

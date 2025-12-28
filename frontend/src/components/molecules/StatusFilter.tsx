@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/atoms/ui/Button';
 import { Filter, ChevronDown, X } from 'lucide-react';
 import { ALL_JOB_STATUSES, STATUS_LABELS } from '@/lib/constants';
 import type { JobStatus } from '@/types';

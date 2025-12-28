@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { DetailRow } from '@/components/application/DetailRow';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
+import { DetailRow } from '@/components/molecules/DetailRow';
 import { MapPin, DollarSign, ExternalLink, Calendar, FileText } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
 import type { Application } from '@/types';

@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { CHART_STATUS_COLORS, prepareStatusBarData, calculateYAxisDomain } from '@/lib/chartUtils';
 import type { Statistics } from '@/types';

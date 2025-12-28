@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
 import { User } from 'lucide-react';
 import type { Application } from '@/types';
 

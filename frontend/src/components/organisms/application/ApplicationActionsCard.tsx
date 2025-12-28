@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Spinner } from '@/components/ui/Spinner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
+import { Button } from '@/components/atoms/ui/Button';
+import { Spinner } from '@/components/atoms/ui/Spinner';
 import { Send, Mail } from 'lucide-react';
 import { getValidNextStatuses } from '@/lib/statusTransitions';
 import type { Application, JobStatus } from '@/types';

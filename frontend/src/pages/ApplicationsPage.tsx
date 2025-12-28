@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { applicationsApi } from '@/api/client';
-import { GoogleSheetsSync } from '@/components/GoogleSheetsSync';
-import { ApplicationsFilters } from '@/components/applications/ApplicationsFilters';
-import { ApplicationsTable } from '@/components/applications/ApplicationsTable';
-import { Spinner } from '@/components/ui/Spinner';
+import { GoogleSheetsSync } from '@/components/organisms/shared/GoogleSheetsSync';
+import { ApplicationsFilters } from '@/components/organisms/applications/ApplicationsFilters';
+import { ApplicationsTable } from '@/components/organisms/applications/ApplicationsTable';
+import { Spinner } from '@/components/atoms/ui/Spinner';
 import { getValidNextStatuses } from '@/lib/statusTransitions';
 import { useApplicationMutations } from '@/hooks/useApplicationMutations';
 import type { Application, JobStatus } from '@/types';

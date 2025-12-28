@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { statisticsApi, applicationsApi } from '@/api/client';
-import { LoadingScreen } from '@/components/ui/Spinner';
-import { GoogleSheetsSync } from '@/components/GoogleSheetsSync';
-import { StatsOverview } from '@/components/dashboard/StatsOverview';
-import { StatusChart } from '@/components/dashboard/StatusChart';
-import { StatusBreakdown } from '@/components/dashboard/StatusBreakdown';
-import { RecentApplications } from '@/components/dashboard/RecentApplications';
+import { LoadingScreen } from '@/components/atoms/ui/Spinner';
+import { GoogleSheetsSync } from '@/components/organisms/shared/GoogleSheetsSync';
+import { StatsOverview } from '@/components/organisms/dashboard/StatsOverview';
+import { StatusChart } from '@/components/organisms/dashboard/StatusChart';
+import { StatusBreakdown } from '@/components/organisms/dashboard/StatusBreakdown';
+import { RecentApplications } from '@/components/organisms/dashboard/RecentApplications';
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = useQuery({

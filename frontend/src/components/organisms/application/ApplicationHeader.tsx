@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/Button';
-import { StatusBadge } from '@/components/StatusBadge';
+import { Button } from '@/components/atoms/ui/Button';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { ArrowLeft } from 'lucide-react';
 import type { Application } from '@/types';
 

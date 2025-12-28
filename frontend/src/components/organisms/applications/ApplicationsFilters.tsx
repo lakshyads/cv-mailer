@@ -1,7 +1,7 @@
-import { Card, CardContent } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { StatusFilter } from '@/components/StatusFilter';
-import { DateFilter } from '@/components/DateFilter';
+import { Card, CardContent } from '@/components/atoms/ui/Card';
+import { Input } from '@/components/atoms/ui/Input';
+import { StatusFilter } from '@/components/molecules/StatusFilter';
+import { DateFilter } from '@/components/molecules/DateFilter';
 import { Search } from 'lucide-react';
 import type { JobStatus } from '@/types';
 

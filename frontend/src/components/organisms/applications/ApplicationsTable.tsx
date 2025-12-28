@@ -1,9 +1,9 @@
 import { Fragment } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Spinner } from '@/components/ui/Spinner';
-import { ProgressTracker } from '@/components/ProgressTracker';
-import { SortableTableHeader } from '@/components/SortableTableHeader';
-import { ApplicationTableRow } from '@/components/applications/ApplicationTableRow';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
+import { Spinner } from '@/components/atoms/ui/Spinner';
+import { ProgressTracker } from '@/components/organisms/shared/ProgressTracker';
+import { SortableTableHeader } from '@/components/molecules/SortableTableHeader';
+import { ApplicationsTableRow } from '@/components/organisms/applications/ApplicationsTableRow';
 import { Send, MoreVertical } from 'lucide-react';
 import type { Application, JobStatus } from '@/types';
 
@@ -130,7 +130,7 @@ export function ApplicationsTable({
                   const validNextStatuses = getValidNextStatuses(app.status);
                   return (
                     <Fragment key={app.id}>
-                      <ApplicationTableRow
+                      <ApplicationsTableRow
                         application={app}
                         showExpandButton={true}
                         isExpanded={isExpanded}

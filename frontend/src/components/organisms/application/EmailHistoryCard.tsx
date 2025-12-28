@@ -1,7 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Spinner } from '@/components/ui/Spinner';
-import { EmailStatusBadge } from '@/components/application/EmailStatusBadge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
+import { Button } from '@/components/atoms/ui/Button';
+import { Spinner } from '@/components/atoms/ui/Spinner';
+import { EmailStatusBadge } from '@/components/atoms/EmailStatusBadge';
 import { Mail, Eye, Send } from 'lucide-react';
 import { formatDateTime, capitalizeFirst } from '@/lib/utils';
 import type { EmailRecord } from '@/types';

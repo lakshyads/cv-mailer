@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { syncApi } from '@/api/client';
-import { Card, CardContent } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/atoms/ui/Card';
+import { Button } from '@/components/atoms/ui/Button';
 import { RefreshCw, Send, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 

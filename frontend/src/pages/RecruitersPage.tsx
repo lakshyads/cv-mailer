@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { recruitersApi } from '@/api/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Spinner } from '@/components/ui/Spinner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
+import { Button } from '@/components/atoms/ui/Button';
+import { Spinner } from '@/components/atoms/ui/Spinner';
 import { Link } from 'react-router-dom';
 import { User, Mail, Briefcase } from 'lucide-react';
 import type { Recruiter } from '@/types';

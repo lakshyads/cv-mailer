@@ -1,11 +1,11 @@
-import { StatusBadge } from '@/components/StatusBadge';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { formatDateTime } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { ExternalLink, Mail, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Application } from '@/types';
 import { ReactNode } from 'react';
 
-interface ApplicationTableRowProps {
+interface ApplicationsTableRowProps {
     application: Application;
     showExpandButton?: boolean;
     isExpanded?: boolean;
@@ -22,7 +22,7 @@ interface ApplicationTableRowProps {
  * Reusable application table row component.
  * Renders a single application row with configurable columns and features.
  */
-export function ApplicationTableRow({
+export function ApplicationsTableRow({
     application: app,
     showExpandButton = false,
     isExpanded = false,
@@ -33,7 +33,7 @@ export function ApplicationTableRow({
     showJobUrl = true,
     size = 'md',
     actions,
-}: ApplicationTableRowProps) {
+}: ApplicationsTableRowProps) {
     const paddingClass = size === 'sm' ? 'py-2 px-3' : 'py-3 px-4';
     const textSizeClass = size === 'sm' ? 'text-xs' : 'text-sm';
 
