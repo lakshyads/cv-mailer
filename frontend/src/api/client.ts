@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Application, Recruiter, EmailRecord, Statistics, PaginatedResponse } from '@/types';
+import type { Application, Recruiter, EmailRecord, Statistics, PaginatedResponse, TimelineEvent } from '@/types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -30,8 +30,9 @@ export const applicationsApi = {
   },
 
   updateStatus: async (id: number, status: string, notes?: string) => {
-    const { data } = await api.put(`/applications/${id}/status`, null, {
-      params: { status, notes },
+    const { data } = await api.put(`/applications/${id}/status`, {
+      status,
+      notes,
     });
     return data;
   },
@@ -39,6 +40,31 @@ export const applicationsApi = {
   getEmails: async (id: number) => {
     const { data } = await api.get<{ application_id: number; emails: EmailRecord[] }>(
       `/applications/${id}/emails`
+    );
+    return data;
+  },
+
+  triggerReachOut: async (id: number, recruiterId?: number) => {
+    const { data } = await api.post<{ message: string; sent_count: number; failed_count: number }>(
+      `/applications/${id}/trigger-reach-out`,
+      null,
+      { params: recruiterId ? { recruiter_id: recruiterId } : {} }
+    );
+    return data;
+  },
+
+  triggerFollowUp: async (id: number, recruiterId?: number) => {
+    const { data } = await api.post<{ message: string; sent_count: number; failed_count: number }>(
+      `/applications/${id}/trigger-follow-up`,
+      null,
+      { params: recruiterId ? { recruiter_id: recruiterId } : {} }
+    );
+    return data;
+  },
+
+  getTimeline: async (id: number) => {
+    const { data } = await api.get<{ application_id: number; events: TimelineEvent[] }>(
+      `/applications/${id}/timeline`
     );
     return data;
   },

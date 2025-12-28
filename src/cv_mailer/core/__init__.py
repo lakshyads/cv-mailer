@@ -10,6 +10,7 @@ from cv_mailer.core.models import (
     Recruiter,
     ResponseRecord,
     DailyEmailStats,
+    StatusHistory,
     job_application_recruiter,
 )
 
@@ -23,5 +24,6 @@ __all__ = [
     "Recruiter",
     "ResponseRecord",
     "DailyEmailStats",
+    "StatusHistory",
     "job_application_recruiter",
 ]

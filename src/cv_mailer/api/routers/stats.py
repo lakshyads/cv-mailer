@@ -1,46 +1,39 @@
 """
-API endpoints for statistics.
+Statistics API endpoints - Thin controller layer.
+
+NO BUSINESS LOGIC HERE - just request/response handling.
+All business logic is in StatisticsService.
 """
 
 from fastapi import APIRouter, Depends
 
-from cv_mailer.services import ApplicationTracker
-from cv_mailer.api.dependencies import get_tracker
+from cv_mailer.services import StatisticsService
+from cv_mailer.api.dependencies import get_statistics_service
 
 router = APIRouter()
 
 
 @router.get("/statistics")
-async def get_statistics(tracker: ApplicationTracker = Depends(get_tracker)):
+async def get_statistics(
+    service: StatisticsService = Depends(get_statistics_service),
+):
     """
     Get application statistics.
-
-    Args:
-        tracker: Application tracker dependency
 
     Returns:
         Application statistics
     """
-    stats = tracker.get_statistics()
-    return stats
+    return service.get_statistics()
 
 
 @router.get("/statistics/summary")
-async def get_statistics_summary(tracker: ApplicationTracker = Depends(get_tracker)):
+async def get_statistics_summary(
+    service: StatisticsService = Depends(get_statistics_service),
+):
     """
     Get summary statistics.
-
-    Args:
-        tracker: Application tracker dependency
 
     Returns:
         Summary statistics
     """
-    stats = tracker.get_statistics()
-
-    return {
-        "total_applications": stats["total_applications"],
-        "total_emails_sent": stats["total_emails_sent"],
-        "follow_ups_sent": stats["follow_ups_sent"],
-        "by_status": stats["by_status"],
-    }
+    return service.get_summary()

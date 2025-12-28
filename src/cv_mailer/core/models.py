@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKey,
     Enum as SQLEnum,
     Table,
+    Index,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -35,6 +36,14 @@ class JobApplication(Base):
 
     __tablename__ = "job_applications"
 
+    # Performance indexes
+    __table_args__ = (
+        Index("ix_job_app_status", "status"),
+        Index("ix_job_app_company_position", "company_name", "position"),
+        Index("ix_job_app_created_at", "created_at"),
+        Index("ix_job_app_spreadsheet_row", "spreadsheet_row_id"),
+    )
+
     id = Column(Integer, primary_key=True)
     spreadsheet_row_id = Column(
         String(255), nullable=False
@@ -50,7 +59,9 @@ class JobApplication(Base):
     custom_message = Column(Text)  # Custom message from sheet to include in email
 
     # Status tracking
-    status = Column(SQLEnum(JobStatus), default=JobStatus.DRAFT)
+    status = Column(
+        SQLEnum(JobStatus), default=JobStatus.APPLIED
+    )  # Applications from sheet are already applied
     notes = Column(Text)
 
     # Timestamps
@@ -73,10 +84,46 @@ class JobApplication(Base):
         )
 
 
+class StatusHistory(Base):
+    """History of status changes for job applications."""
+
+    __tablename__ = "status_history"
+
+    __table_args__ = (
+        Index("ix_status_history_app_id", "job_application_id"),
+        Index("ix_status_history_changed_at", "changed_at"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    job_application_id = Column(Integer, ForeignKey("job_applications.id"), nullable=False)
+
+    # Status change details
+    from_status = Column(SQLEnum(JobStatus))
+    to_status = Column(SQLEnum(JobStatus), nullable=False)
+    notes = Column(Text)  # Optional notes from the status change
+
+    # Timestamp
+    changed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationship
+    job_application = relationship("JobApplication", backref="status_history")
+
+    def __repr__(self):
+        return f"<StatusHistory(id={self.id}, app_id={self.job_application_id}, {self.from_status.value if self.from_status else 'None'} -> {self.to_status.value})>"
+
+
 class EmailRecord(Base):
     """Email communication record."""
 
     __tablename__ = "email_records"
+
+    # Performance indexes
+    __table_args__ = (
+        Index("ix_email_job_app_id", "job_application_id"),
+        Index("ix_email_status", "status"),
+        Index("ix_email_sent_at", "sent_at"),
+        Index("ix_email_recipient", "recipient_email"),
+    )
 
     id = Column(Integer, primary_key=True)
     job_application_id = Column(Integer, ForeignKey("job_applications.id"), nullable=False)
@@ -112,6 +159,9 @@ class Recruiter(Base):
     """Recruiter information."""
 
     __tablename__ = "recruiters"
+
+    # Performance indexes
+    __table_args__ = (Index("ix_recruiter_email", "email", unique=True),)
 
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=True)

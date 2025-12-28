@@ -1,9 +1,13 @@
 export type JobStatus = 
   | 'draft'
+  | 'reached_out'
   | 'applied'
-  | 'interviewing'
-  | 'offer'
+  | 'interview_scheduled'
+  | 'interview_in_progress'
+  | 'result_awaited'
+  | 'offer_received'
   | 'rejected'
+  | 'ghosted'
   | 'accepted'
   | 'withdrawn';
 
@@ -51,6 +55,7 @@ export interface EmailRecord {
   job_application_id: number;
   email_type: EmailType;
   subject: string;
+  body?: string;
   recipient_email: string;
   recipient_name: string;
   status: EmailStatus;
@@ -58,6 +63,15 @@ export interface EmailRecord {
   follow_up_number: number;
   sent_at?: string;
   created_at?: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  type: 'email_sent' | 'status_change' | 'follow_up' | 'first_contact';
+  title: string;
+  description?: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
 }
 
 export interface Statistics {
@@ -73,6 +87,6 @@ export interface PaginatedResponse<T> {
   total: number;
   limit: number;
   offset: number;
-  [key: string]: T[] | number;
+  items: T[];
 }
 

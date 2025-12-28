@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { applicationsApi } from '@/api/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -7,17 +7,34 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDate } from '@/lib/utils';
+import { getValidNextStatuses } from '@/lib/statusTransitions';
 import { Link } from 'react-router-dom';
-import { Search, Filter, ExternalLink } from 'lucide-react';
+import { Search, Filter, ExternalLink, Mail, Send, MoreVertical } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Application, JobStatus } from '@/types';
 
-const STATUS_OPTIONS: JobStatus[] = ['draft', 'applied', 'interviewing', 'offer', 'rejected', 'accepted', 'withdrawn'];
+const STATUS_OPTIONS: JobStatus[] = [
+  'draft',
+  'reached_out',
+  'applied',
+  'interview_scheduled',
+  'interview_in_progress',
+  'result_awaited',
+  'offer_received',
+  'rejected',
+  'ghosted',
+  'accepted',
+  'withdrawn',
+];
 
 export default function ApplicationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(0);
+  const [actionMenuOpen, setActionMenuOpen] = useState<number | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<Record<number, string>>({});
   const limit = 20;
+  const queryClient = useQueryClient();
 
   // Fetch applications with filters
   const { data, isLoading, error } = useQuery({
@@ -38,11 +55,70 @@ export default function ApplicationsPage() {
   });
 
   const applications: Application[] = searchQuery.length > 2
-    ? (searchResults?.applications as Application[] || [])
-    : (data?.applications as Application[] || []);
+    ? (searchResults?.items as Application[] || [])
+    : (data?.items as Application[] || []);
 
   const total = searchQuery.length > 2 ? searchResults?.total || 0 : data?.total || 0;
   const totalPages = Math.ceil(total / limit);
+
+  const triggerReachOutMutation = useMutation({
+    mutationFn: (id: number) => applicationsApi.triggerReachOut(id),
+    onSuccess: (data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['application', id] });
+      toast.success(data.message || 'Reach-out email sent successfully');
+      setActionMenuOpen(null);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.detail || 'Failed to send reach-out email');
+    },
+  });
+
+  const triggerFollowUpMutation = useMutation({
+    mutationFn: (id: number) => applicationsApi.triggerFollowUp(id),
+    onSuccess: (data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['application', id] });
+      toast.success(data.message || 'Follow-up email sent successfully');
+      setActionMenuOpen(null);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.detail || 'Failed to send follow-up email');
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status, notes }: { id: number; status: string; notes?: string }) =>
+      applicationsApi.updateStatus(id, status, notes),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['application', variables.id] });
+      toast.success('Status updated successfully');
+      setSelectedStatus({ ...selectedStatus, [variables.id]: '' });
+      setActionMenuOpen(null);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.detail || 'Failed to update status');
+    },
+  });
+
+  const handleQuickStatusUpdate = (appId: number, status: JobStatus) => {
+    updateStatusMutation.mutate({ id: appId, status });
+  };
+
+  // Close menu when clicking outside
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActionMenuOpen(null);
+      }
+    };
+    if (actionMenuOpen !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [actionMenuOpen]);
 
   return (
     <div className="space-y-6">
@@ -85,7 +161,7 @@ export default function ApplicationsPage() {
                 <option value="">All Statuses</option>
                 {STATUS_OPTIONS.map((status) => (
                   <option key={status} value={status}>
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                    {status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </option>
                 ))}
               </select>
@@ -117,13 +193,12 @@ export default function ApplicationsPage() {
           ) : (
             <div className="space-y-3">
               {applications.map((app) => (
-                <Link
+                <div
                   key={app.id}
-                  to={`/applications/${app.id}`}
-                  className="block rounded-xl border p-5 transition-all hover:shadow-md hover:border-primary/50 group"
+                  className="block rounded-xl border p-5 transition-all hover:shadow-md hover:border-primary/50 group relative"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0 space-y-2">
+                    <Link to={`/applications/${app.id}`} className="flex-1 min-w-0 space-y-2">
                       <div className="flex items-center gap-2">
                         <h3 className="font-bold text-lg group-hover:text-primary transition-colors truncate">{app.company_name}</h3>
                         {app.job_posting_url && (
@@ -154,12 +229,84 @@ export default function ApplicationsPage() {
                           </span>
                         )}
                       </div>
-                    </div>
-                    <div className="flex-shrink-0">
+                    </Link>
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <StatusBadge status={app.status} />
+                      <div className="relative" ref={menuRef}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setActionMenuOpen(actionMenuOpen === app.id ? null : app.id);
+                          }}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                        {actionMenuOpen === app.id && (
+                          <div className="absolute right-0 top-10 z-10 w-56 rounded-md border bg-background shadow-lg">
+                            <div className="p-2 space-y-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  triggerReachOutMutation.mutate(app.id);
+                                }}
+                                disabled={triggerReachOutMutation.isPending}
+                              >
+                                <Send className="h-4 w-4 mr-2" />
+                                Trigger Reach-out
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  triggerFollowUpMutation.mutate(app.id);
+                                }}
+                                disabled={triggerFollowUpMutation.isPending}
+                              >
+                                <Mail className="h-4 w-4 mr-2" />
+                                Send Follow-up
+                              </Button>
+                              <div className="border-t my-1" />
+                              <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Quick Status:</div>
+                              {(() => {
+                                const validNextStatuses = getValidNextStatuses(app.status);
+                                if (validNextStatuses.length === 0) {
+                                  return (
+                                    <div className="px-2 py-1 text-xs text-muted-foreground">
+                                      No valid transitions (terminal state)
+                                    </div>
+                                  );
+                                }
+                                return validNextStatuses.map((status) => (
+                                  <Button
+                                    key={status}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start text-xs"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      handleQuickStatusUpdate(app.id, status);
+                                    }}
+                                    disabled={updateStatusMutation.isPending || app.status === status}
+                                  >
+                                    {status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                  </Button>
+                                ));
+                              })()}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}

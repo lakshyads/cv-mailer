@@ -1,173 +1,197 @@
 """
-API endpoints for job applications.
+Application API endpoints - Thin controller layer.
+
+NO BUSINESS LOGIC HERE - just request/response handling.
+All business logic is in ApplicationService.
 """
 
-from typing import List, Optional
+import logging
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from cv_mailer.services import ApplicationTracker
-from cv_mailer.core import JobApplication, JobStatus
-from cv_mailer.api.dependencies import get_tracker
+from cv_mailer.services import ApplicationService, EmailService
+from cv_mailer.core import JobStatus
+from cv_mailer.api.dependencies import get_application_service, get_email_service
+from cv_mailer.api.schemas import (
+    ApplicationListResponse,
+    ApplicationDetailResponse,
+    UpdateStatusRequest,
+    EmailActionResponse,
+    PaginatedResponse,
+    TimelineEvent,
+)
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/applications")
+@router.get("/applications", response_model=PaginatedResponse[ApplicationListResponse])
 async def list_applications(
     status: Optional[str] = Query(None, description="Filter by status"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    tracker: ApplicationTracker = Depends(get_tracker),
+    service: ApplicationService = Depends(get_application_service),
 ):
-    """
-    List job applications with optional filtering.
+    """List job applications with optional filtering."""
+    try:
+        job_status = JobStatus(status.lower()) if status else None
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
 
-    Args:
-        status: Filter by job status
-        limit: Maximum number of results
-        offset: Number of results to skip
-        tracker: Application tracker dependency
+    applications, total = service.list_applications(
+        status=job_status, limit=limit, offset=offset
+    )
 
-    Returns:
-        List of job applications
-    """
-    query = tracker.session.query(JobApplication)
-
-    if status:
-        try:
-            job_status = JobStatus(status.lower())
-            query = query.filter_by(status=job_status)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
-
-    applications = query.offset(offset).limit(limit).all()
-
-    return {
-        "total": query.count(),
-        "limit": limit,
-        "offset": offset,
-        "applications": [
-            {
-                "id": app.id,
-                "company_name": app.company_name,
-                "position": app.position,
-                "status": app.status.value,
-                "location": app.location,
-                "created_at": app.created_at.isoformat() if app.created_at else None,
-                "applied_at": app.applied_at.isoformat() if app.applied_at else None,
-            }
-            for app in applications
-        ],
-    }
+    return PaginatedResponse(
+        total=total,
+        limit=limit,
+        offset=offset,
+        items=[ApplicationListResponse.from_orm(app) for app in applications],
+    )
 
 
-@router.get("/applications/{application_id}")
-async def get_application(application_id: int, tracker: ApplicationTracker = Depends(get_tracker)):
-    """
-    Get details of a specific job application.
+@router.get("/applications/search", response_model=PaginatedResponse[ApplicationListResponse])
+async def search_applications(
+    q: str = Query(..., description="Search query"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    service: ApplicationService = Depends(get_application_service),
+):
+    """Search job applications by company name or position."""
+    applications, total = service.search_applications(query=q, limit=limit, offset=offset)
 
-    Args:
-        application_id: Job application ID
-        tracker: Application tracker dependency
+    return PaginatedResponse(
+        total=total,
+        limit=limit,
+        offset=offset,
+        items=[ApplicationListResponse.from_orm(app) for app in applications],
+    )
 
-    Returns:
-        Job application details
-    """
-    app = tracker.session.query(JobApplication).get(application_id)
 
-    if not app:
-        raise HTTPException(status_code=404, detail="Application not found")
+@router.get("/applications/{application_id}", response_model=ApplicationDetailResponse)
+async def get_application(
+    application_id: int,
+    service: ApplicationService = Depends(get_application_service),
+):
+    """Get details of a specific job application."""
+    try:
+        app = service.get_application(application_id)
+        emails_count = service.get_emails_count(application_id)
 
-    return {
-        "id": app.id,
-        "company_name": app.company_name,
-        "position": app.position,
-        "status": app.status.value,
-        "location": app.location,
-        "job_posting_url": app.job_posting_url,
-        "expected_salary": app.expected_salary,
-        "custom_message": app.custom_message,
-        "notes": app.notes,
-        "created_at": app.created_at.isoformat() if app.created_at else None,
-        "updated_at": app.updated_at.isoformat() if app.updated_at else None,
-        "applied_at": app.applied_at.isoformat() if app.applied_at else None,
-        "closed_at": app.closed_at.isoformat() if app.closed_at else None,
-        "recruiters": [{"id": r.id, "name": r.name, "email": r.email} for r in app.recruiters],
-        "emails_count": len(app.emails),
-    }
+        response = ApplicationDetailResponse.from_orm(app)
+        response.emails_count = emails_count
+
+        return response
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.put("/applications/{application_id}/status")
 async def update_application_status(
     application_id: int,
-    status: str,
-    notes: Optional[str] = None,
-    tracker: ApplicationTracker = Depends(get_tracker),
+    request: UpdateStatusRequest,
+    service: ApplicationService = Depends(get_application_service),
 ):
-    """
-    Update job application status.
-
-    Args:
-        application_id: Job application ID
-        status: New status
-        notes: Optional notes
-        tracker: Application tracker dependency
-
-    Returns:
-        Success message
-    """
+    """Update job application status."""
     try:
-        job_status = JobStatus(status.lower())
-        tracker.update_job_status(application_id, job_status, notes)
+        service.update_status(application_id, request.status, request.notes)
+        logger.info(f"API: Updated application {application_id} status to {request.status.value}")
         return {"message": "Status updated successfully"}
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+    except ValueError as e:
+        # ValueError can be from validation (400) or not found (404)
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(status_code=404, detail=error_msg)
+        else:
+            # Status transition validation error
+            raise HTTPException(status_code=400, detail=error_msg)
     except Exception as e:
+        logger.error(f"API: Error updating status: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/applications/search")
-async def search_applications(
-    q: str = Query(..., description="Search query"),
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    tracker: ApplicationTracker = Depends(get_tracker),
+@router.post(
+    "/applications/{application_id}/trigger-reach-out", response_model=EmailActionResponse
+)
+async def trigger_reach_out(
+    application_id: int,
+    recruiter_id: Optional[int] = Query(None, description="Optional recruiter ID"),
+    email_service: EmailService = Depends(get_email_service),
+):
+    """Trigger first contact email for an application."""
+    try:
+        logger.info(f"API: Triggering reach-out for application {application_id}")
+        result = email_service.send_first_contact(application_id, recruiter_id)
+
+        message = (
+            f"Reach-out triggered: {result['sent_count']} sent, {result['failed_count']} failed"
+        )
+        logger.info(f"API: {message}")
+
+        return EmailActionResponse(
+            message=message,
+            sent_count=result["sent_count"],
+            failed_count=result["failed_count"],
+        )
+    except ValueError as e:
+        logger.warning(f"API: Invalid request for reach-out: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"API: Error triggering reach-out: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/applications/{application_id}/trigger-follow-up", response_model=EmailActionResponse
+)
+async def trigger_follow_up(
+    application_id: int,
+    recruiter_id: Optional[int] = Query(None, description="Optional recruiter ID"),
+    email_service: EmailService = Depends(get_email_service),
 ):
     """
-    Search job applications by company name or position.
-
-    Args:
-        q: Search query
-        limit: Maximum number of results
-        offset: Number of results to skip
-        tracker: Application tracker dependency
-
-    Returns:
-        List of matching job applications
+    Trigger follow-up email for an application.
+    Respects FOLLOW_UP_DAYS configuration.
     """
-    search_term = f"%{q}%"
-    query = tracker.session.query(JobApplication).filter(
-        (JobApplication.company_name.ilike(search_term))
-        | (JobApplication.position.ilike(search_term))
-    )
+    try:
+        logger.info(f"API: Triggering follow-up for application {application_id}")
 
-    applications = query.offset(offset).limit(limit).all()
+        result = email_service.send_follow_up(application_id, recruiter_id)
 
-    return {
-        "total": query.count(),
-        "limit": limit,
-        "offset": offset,
-        "query": q,
-        "applications": [
-            {
-                "id": app.id,
-                "company_name": app.company_name,
-                "position": app.position,
-                "status": app.status.value,
-                "location": app.location,
-                "created_at": app.created_at.isoformat() if app.created_at else None,
-                "applied_at": app.applied_at.isoformat() if app.applied_at else None,
-            }
-            for app in applications
-        ],
-    }
+        message = (
+            f"Follow-up triggered: {result['sent_count']} sent, {result['failed_count']} failed"
+        )
+        logger.info(f"API: {message}")
+
+        return EmailActionResponse(
+            message=message,
+            sent_count=result["sent_count"],
+            failed_count=result["failed_count"],
+        )
+    except ValueError as e:
+        logger.warning(f"API: Invalid request for follow-up: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"API: Error triggering follow-up: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/applications/{application_id}/timeline")
+async def get_application_timeline(
+    application_id: int,
+    service: ApplicationService = Depends(get_application_service),
+):
+    """Get timeline of events for an application."""
+    try:
+        logger.info(f"API: Fetching timeline for application {application_id}")
+        events = service.get_application_timeline(application_id)
+
+        timeline_events = [TimelineEvent(**event) for event in events]
+
+        return {"application_id": application_id, "events": timeline_events}
+    except ValueError as e:
+        logger.warning(f"API: Invalid request for timeline: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"API: Error getting timeline: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))

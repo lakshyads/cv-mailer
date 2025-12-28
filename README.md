@@ -29,40 +29,39 @@ cv-mailer                     # Start sending emails
 
 ## 📚 Documentation
 
-### Getting Started
+**📖 [Complete Documentation Index](docs/INDEX.md)** - Start here for all documentation
 
-- **[Quick Start Guide](docs/QUICK_START.md)** - Get running in 5 minutes
-- **[Complete Setup Guide](docs/SETUP_GUIDE.md)** - Detailed setup instructions
-- **[Google Sheets Template](docs/GOOGLE_SHEETS_TEMPLATE.md)** - Sheet format reference
+### Quick Links
 
-### Usage
-
-- **[Web Dashboard Guide](docs/WEB_DASHBOARD_GUIDE.md)** - Web UI setup and usage (NEW!)
-- **[API Guide](docs/API_GUIDE.md)** - Complete REST API documentation
-- **[Email Templates](docs/EMAIL_TEMPLATE_SAMPLES.md)** - Sample email templates
-- **[OAuth Troubleshooting](docs/fix_enhancements/OAUTH_FIX.md)** - Fix authentication issues
-
-### Architecture
-
-- **[Architecture Overview](docs/design/ARCHITECTURE.md)** - System architecture
-- **[Design Explanation](docs/design/DESIGN_EXPLANATION.md)** - Design patterns and rationale
-- **[Feature Roadmap](docs/design/FEATURE_SUGGESTIONS.md)** - Future enhancements
+- **[Quick Start Guide](docs/QUICK_START.md)** ⚡ - Get running in 5 minutes
+- **[Setup Guide](docs/SETUP_GUIDE.md)** 🔧 - Detailed setup instructions
+- **[Web Dashboard Guide](docs/WEB_DASHBOARD_GUIDE.md)** 🌐 - Web UI usage
+- **[API Guide](docs/API_GUIDE.md)** 🚀 - REST API documentation
+- **[Changelog](docs/CHANGELOG.md)** 📝 - What's new and changed
+- **[Architecture](docs/design/ARCHITECTURE.md)** 🏗️ - System design
+- **[Roadmap](docs/design/FEATURE_SUGGESTIONS.md)** 🎯 - Planned features
 
 ## 🏗️ Architecture
 
-Modern, layered architecture ready for scaling:
+**Production-ready, enterprise-grade architecture with single source of truth:**
 
 ```text
 Presentation Layer (CLI + API)
+    ↓ (Both call same services)
+Service Layer (Business Logic) ⭐ SINGLE SOURCE OF TRUTH
     ↓
-Business Logic (Services)
+Repository Layer (Data Access)
     ↓
-Integrations (Gmail, Sheets)
-    ↓
-Core (Models & Database)
+Database (SQLite with indexes)
 ```
 
-See [Architecture Overview](docs/design/ARCHITECTURE.md) for details.
+**Key Principle:** All business logic resides in the service layer.  
+Both CLI and API use the same service methods → No duplication, always in sync.
+
+📖 **Architecture Docs:**
+- **[Proper Architecture](PROPER_ARCHITECTURE.md)** ⭐ Complete architecture guide
+- **[Architecture Summary](FINAL_ARCHITECTURE_SUMMARY.md)** Quick overview
+- **[Design Details](docs/design/ARCHITECTURE.md)** Technical details
 
 ## 📦 Installation
 

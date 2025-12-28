@@ -73,7 +73,7 @@ class ApplicationTracker:
             self._link_recruiters_to_application(app, recruiters)
             return app
 
-        # Create new application
+        # Create new application (already applied to company)
         app = JobApplication(
             spreadsheet_row_id=spreadsheet_row_id,
             sheet_name=sheet_name,
@@ -83,7 +83,7 @@ class ApplicationTracker:
             job_posting_url=job_posting_url,
             expected_salary=expected_salary,
             custom_message=custom_message,
-            status=JobStatus.DRAFT,
+            status=JobStatus.APPLIED,  # Applications from sheet are already applied
         )
         self.session.add(app)
         self.session.flush()  # Flush to get the ID
@@ -157,11 +157,8 @@ class ApplicationTracker:
         )
 
         self.session.add(email_record)
-
-        # Update job application status
-        if job_app.status == JobStatus.DRAFT:
-            job_app.status = JobStatus.REACHED_OUT
-            job_app.applied_at = datetime.now(timezone.utc)
+        # NOTE: Status update is handled by EmailService after all emails are sent
+        # Do NOT update status here to avoid setting updated_at between emails
 
         self.session.commit()
         log = f"Recorded email sent for job application {job_application_id}"
@@ -206,7 +203,7 @@ class ApplicationTracker:
 
         applications = (
             self.session.query(JobApplication)
-            .filter(JobApplication.status.in_([JobStatus.REACHED_OUT, JobStatus.APPLIED]))
+            .filter(JobApplication.status == JobStatus.REACHED_OUT)
             .all()
         )
 
@@ -250,6 +247,61 @@ class ApplicationTracker:
 
         return needing_follow_up
 
+    def can_send_follow_up(self, job_application_id: int) -> tuple[bool, str]:
+        """
+        Check if an application can receive a follow-up email.
+        
+        Args:
+            job_application_id: Job application ID
+            
+        Returns:
+            Tuple of (can_send: bool, reason: str)
+        """
+        app = self.session.query(JobApplication).get(job_application_id)
+        if not app:
+            return False, f"Application {job_application_id} not found"
+            
+        # Must be in REACHED_OUT status
+        if app.status != JobStatus.REACHED_OUT:
+            return False, f"Application status is {app.status.value}, must be 'reached_out' to send follow-up"
+        
+        # Get last email sent (any type)
+        last_email = (
+            self.session.query(EmailRecord)
+            .filter_by(job_application_id=job_application_id, status=EmailStatus.SENT)
+            .order_by(EmailRecord.sent_at.desc())
+            .first()
+        )
+        
+        if not last_email or not last_email.sent_at:
+            return False, "No emails have been sent for this application yet"
+        
+        # Check if enough time has passed
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=Config.FOLLOW_UP_DAYS)
+        sent_at = last_email.sent_at
+        if sent_at.tzinfo is None:
+            sent_at = sent_at.replace(tzinfo=timezone.utc)
+        
+        if sent_at >= cutoff_date:
+            days_since = (datetime.now(timezone.utc) - sent_at).days
+            days_needed = Config.FOLLOW_UP_DAYS
+            return False, f"Not enough time has passed. Last email sent {days_since} days ago, need {days_needed} days"
+        
+        # Check if we've reached max follow-ups
+        last_follow_up_number = (
+            self.session.query(func.max(EmailRecord.follow_up_number))
+            .filter_by(
+                job_application_id=job_application_id, is_follow_up=True, status=EmailStatus.SENT
+            )
+            .scalar()
+            or 0
+        )
+        
+        if last_follow_up_number >= Config.MAX_FOLLOW_UPS:
+            return False, f"Maximum follow-ups ({Config.MAX_FOLLOW_UPS}) already sent"
+        
+        return True, "OK"
+    
     def get_next_follow_up_number(self, job_application_id: int) -> int:
         """Get the next follow-up number for a job application."""
         # EmailRecord is stored per-recipient, so counting rows breaks when an application
@@ -349,10 +401,22 @@ class ApplicationTracker:
     def update_job_status(
         self, job_application_id: int, status: JobStatus, notes: Optional[str] = None
     ):
-        """Update job application status."""
+        """Update job application status and record in history."""
         app = self.session.query(JobApplication).get(job_application_id)
         if not app:
             raise ValueError(f"Job application {job_application_id} not found")
+
+        # Record status change in history before updating
+        from cv_mailer.core import StatusHistory
+        from_status = app.status
+        status_history = StatusHistory(
+            job_application_id=job_application_id,
+            from_status=from_status,
+            to_status=status,
+            notes=notes,
+            changed_at=datetime.now(timezone.utc),
+        )
+        self.session.add(status_history)
 
         app.status = status
         app.updated_at = datetime.now(timezone.utc)
@@ -360,10 +424,22 @@ class ApplicationTracker:
         if notes:
             app.notes = notes
 
-        if status == JobStatus.CLOSED:
+        # Set closed_at for terminal states
+        if status in [
+            JobStatus.REJECTED,
+            JobStatus.GHOSTED,
+            JobStatus.ACCEPTED,
+            JobStatus.WITHDRAWN,
+        ]:
             app.closed_at = datetime.now(timezone.utc)
-        elif status == JobStatus.INTERVIEW_SCHEDULED:
-            app.status = JobStatus.INTERVIEW_SCHEDULED
+        elif app.closed_at and status not in [
+            JobStatus.REJECTED,
+            JobStatus.GHOSTED,
+            JobStatus.ACCEPTED,
+            JobStatus.WITHDRAWN,
+        ]:
+            # Reopen if status changes from terminal to non-terminal
+            app.closed_at = None
 
         self.session.commit()
         logger.info(f"Updated job application {job_application_id} status to {status}")
@@ -416,3 +492,123 @@ class ApplicationTracker:
             "total_emails_sent": total_emails,
             "follow_ups_sent": follow_ups,
         }
+
+    def get_application_timeline(self, application_id: int) -> List[Dict]:
+        """
+        Get timeline of events for an application.
+
+        Args:
+            application_id: Job application ID
+
+        Returns:
+            List of timeline events
+
+        Raises:
+            ValueError: If application not found
+        """
+        app = self.session.query(JobApplication).get(application_id)
+        if not app:
+            raise ValueError(f"Application {application_id} not found")
+
+        events = []
+
+        # Application created/submitted (treat created_at as submitted)
+        if app.created_at:
+            events.append(
+                {
+                    "id": f"created_{app.id}",
+                    "type": "status_change",
+                    "title": "Application Submitted",
+                    "description": f"Application for {app.position} at {app.company_name} was submitted",
+                    "timestamp": app.created_at.isoformat(),
+                    "metadata": {"status": "draft"},
+                }
+            )
+
+        # Email events
+        for email in sorted(app.emails, key=lambda e: e.created_at or datetime.min):
+            if email.email_type == EmailType.FIRST_CONTACT:
+                events.append(
+                    {
+                        "id": f"email_{email.id}",
+                        "type": "first_contact",
+                        "title": "First Contact Sent",
+                        "description": f"Email sent to {email.recipient_name} ({email.recipient_email})",
+                        "timestamp": (
+                            (email.sent_at or email.created_at).isoformat()
+                            if (email.sent_at or email.created_at)
+                            else None
+                        ),
+                        "metadata": {
+                            "email_id": email.id,
+                            "recipient_email": email.recipient_email,
+                            "recipient_name": email.recipient_name,
+                            "subject": email.subject,
+                        },
+                    }
+                )
+            elif email.email_type == EmailType.FOLLOW_UP:
+                events.append(
+                    {
+                        "id": f"email_{email.id}",
+                        "type": "follow_up",
+                        "title": f"Follow-up #{email.follow_up_number} Sent",
+                        "description": f"Follow-up email sent to {email.recipient_name} ({email.recipient_email})",
+                        "timestamp": (
+                            (email.sent_at or email.created_at).isoformat()
+                            if (email.sent_at or email.created_at)
+                            else None
+                        ),
+                        "metadata": {
+                            "email_id": email.id,
+                            "recipient_email": email.recipient_email,
+                            "recipient_name": email.recipient_name,
+                            "subject": email.subject,
+                            "follow_up_number": email.follow_up_number,
+                        },
+                    }
+                )
+
+        # Status change events
+        if app.updated_at and app.updated_at != app.created_at:
+            events.append(
+                {
+                    "id": f"status_{app.id}",
+                    "type": "status_change",
+                    "title": f"Status: {app.status.value.replace('_', ' ').title()}",
+                    "description": f"Application status updated to {app.status.value.replace('_', ' ').title()}",
+                    "timestamp": app.updated_at.isoformat(),
+                    "metadata": {"status": app.status.value},
+                }
+            )
+
+        # Applied at (only add if different from created_at)
+        if app.applied_at and app.applied_at != app.created_at:
+            events.append(
+                {
+                    "id": f"applied_{app.id}",
+                    "type": "status_change",
+                    "title": "Application Status Updated to Applied",
+                    "description": "Application status was updated to Applied",
+                    "timestamp": app.applied_at.isoformat(),
+                    "metadata": {"status": "applied"},
+                }
+            )
+
+        # Closed at
+        if app.closed_at:
+            events.append(
+                {
+                    "id": f"closed_{app.id}",
+                    "type": "status_change",
+                    "title": "Application Closed",
+                    "description": "Application was closed",
+                    "timestamp": app.closed_at.isoformat(),
+                    "metadata": {"status": app.status.value},
+                }
+            )
+
+        # Sort by timestamp
+        events.sort(key=lambda e: e["timestamp"] or "", reverse=True)
+
+        return events

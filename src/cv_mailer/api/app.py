@@ -1,8 +1,19 @@
 """
 FastAPI application for CV Mailer API.
-This provides a RESTful API for the CV Mailer system.
+
+This file contains ONLY infrastructure setup:
+- Logging configuration
+- Database initialization
+- CORS middleware
+- Router registration
+
+NO BUSINESS LOGIC HERE - all business logic is in services/.
+API routers are thin controllers that call service methods.
 """
 
+import logging
+import sys
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -10,9 +21,29 @@ import uvicorn
 from cv_mailer import __version__
 from cv_mailer.api.routers import applications, emails, recruiters, stats
 from cv_mailer.utils import init_database
+from cv_mailer.config import Config
 
-# Initialize database
+# Setup logging
+def setup_logging():
+    """Setup logging configuration for API."""
+    log_file = Path(Config.LOG_FILE)
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    logging.basicConfig(
+        level=getattr(logging, Config.LOG_LEVEL),
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(Config.LOG_FILE),
+            logging.StreamHandler(sys.stdout)
+        ],
+    )
+
+setup_logging()
+logger = logging.getLogger(__name__)
+
+# Initialize database (infrastructure setup - not business logic)
 init_database()
+logger.info("Database initialized")
 
 # Create FastAPI app
 app = FastAPI(
@@ -37,6 +68,8 @@ app.include_router(applications.router, prefix="/api/v1", tags=["applications"])
 app.include_router(emails.router, prefix="/api/v1", tags=["emails"])
 app.include_router(recruiters.router, prefix="/api/v1", tags=["recruiters"])
 app.include_router(stats.router, prefix="/api/v1", tags=["statistics"])
+
+logger.info("CV Mailer API initialized")
 
 
 @app.get("/")

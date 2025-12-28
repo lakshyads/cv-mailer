@@ -59,6 +59,12 @@ This document outlines additional features that could enhance the CV Mailer appl
   - ✅ Responsive design (mobile-friendly)
   - ✅ Error handling and loading states
   - ✅ Professional, clean UI/UX
+- **To implement**
+  - Multi-user authentication (header space ready)
+  - Email sending from UI (action areas prepared)
+  - Template management (layouts support modals)
+  - Calendar integration (date display areas ready)
+  - Quick actions (button areas designed)
 - **Documentation**: See `docs/WEB_DASHBOARD_GUIDE.md`
 - **Location**: `frontend/` directory
 

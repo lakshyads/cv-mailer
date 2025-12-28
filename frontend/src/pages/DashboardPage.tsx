@@ -189,7 +189,7 @@ export default function DashboardPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {recentApps?.applications?.length === 0 ? (
+          {recentApps?.items?.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No applications yet.</p>
@@ -197,7 +197,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {recentApps?.applications?.map((app) => (
+              {recentApps?.items?.map((app) => (
                 <Link
                   key={app.id}
                   to={`/applications/${app.id}`}

@@ -6,16 +6,32 @@ from enum import Enum
 
 
 class JobStatus(str, Enum):
-    """Job application status."""
+    """
+    Job application status.
+    
+    Status flow:
+    1. APPLIED - Application added to sheet (already applied to company)
+    2. REACHED_OUT - We've reached out to recruiter(s) about this application
+    3. [Rest of the flow based on responses]
+    """
 
-    DRAFT = "draft"
-    REACHED_OUT = "reached_out"
-    APPLIED = "applied"
+    # Initial states
+    APPLIED = "applied"  # Default: Application already submitted to company
+    REACHED_OUT = "reached_out"  # We've contacted recruiter(s)
+    
+    # Interview process
     INTERVIEW_SCHEDULED = "interview_scheduled"
-    IN_PROGRESS = "in_progress"
-    CLOSED = "closed"
-    REJECTED = "rejected"
+    INTERVIEW_IN_PROGRESS = "interview_in_progress"
+    RESULT_AWAITED = "result_awaited"
+    
+    # Final states (positive)
+    OFFER_RECEIVED = "offer_received"
     ACCEPTED = "accepted"
+    
+    # Final states (negative)
+    REJECTED = "rejected"
+    GHOSTED = "ghosted"
+    WITHDRAWN = "withdrawn"
 
 
 class EmailType(str, Enum):
