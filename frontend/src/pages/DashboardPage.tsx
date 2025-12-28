@@ -8,15 +8,34 @@ import { Link } from 'react-router-dom';
 import { Briefcase, Mail, TrendingUp, Clock, ArrowUpRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
+// Status colors matching our flow
 const STATUS_COLORS: Record<string, string> = {
-  draft: '#94a3b8',
-  applied: '#3b82f6',
-  interviewing: '#8b5cf6',
-  offer: '#10b981',
-  rejected: '#ef4444',
-  accepted: '#059669',
-  withdrawn: '#f59e0b',
+  applied: '#3b82f6',              // Blue - initial state
+  reached_out: '#6366f1',          // Indigo - after emails sent
+  interview_scheduled: '#8b5cf6',   // Purple - interview scheduled
+  interview_in_progress: '#a855f7', // Purple - interview in progress
+  result_awaited: '#c084fc',       // Purple - waiting for result
+  offer_received: '#10b981',        // Green - offer received
+  accepted: '#059669',              // Green - accepted (terminal positive)
+  rejected: '#ef4444',              // Red - rejected (terminal negative)
+  ghosted: '#f87171',               // Red - ghosted (terminal negative)
+  withdrawn: '#f59e0b',             // Orange - withdrawn (terminal negative)
+  draft: '#94a3b8',                 // Gray - legacy
 };
+
+// Status order matching our flow
+const STATUS_ORDER: string[] = [
+  'applied',
+  'reached_out',
+  'interview_scheduled',
+  'interview_in_progress',
+  'result_awaited',
+  'offer_received',
+  'accepted',
+  'rejected',
+  'ghosted',
+  'withdrawn',
+];
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = useQuery({
@@ -33,12 +52,19 @@ export default function DashboardPage() {
     return <LoadingScreen />;
   }
 
-  // Prepare data for charts
-  const statusBarData = Object.entries(stats.by_status).map(([status, count]) => ({
-    status: capitalizeFirst(status),
-    statusKey: status,
-    count,
-  }));
+  // Prepare data for charts - ordered by status flow
+  // Show all main flow statuses (applied through offer_received), only show terminal states if count > 0
+  const mainFlowStatuses = ['applied', 'reached_out', 'interview_scheduled', 'interview_in_progress', 'result_awaited', 'offer_received'];
+  const terminalStatuses = ['accepted', 'rejected', 'ghosted', 'withdrawn'];
+  
+  const statusBarData = STATUS_ORDER.map((statusKey) => ({
+    status: capitalizeFirst(statusKey.replace(/_/g, ' ')),
+    statusKey,
+    count: stats.by_status[statusKey] || 0,
+  })).filter((item) => {
+    // Always show main flow statuses, only show terminal if count > 0
+    return mainFlowStatuses.includes(item.statusKey) || (terminalStatuses.includes(item.statusKey) && item.count > 0);
+  });
 
   return (
     <div className="space-y-6">
@@ -93,7 +119,13 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium text-muted-foreground">Response Rate</p>
                 <p className="text-3xl font-bold">
                   {stats.total_applications > 0
-                    ? Math.round(((stats.by_status.interviewing || 0) / stats.total_applications) * 100)
+                    ? Math.round(
+                        ((stats.by_status.interview_scheduled || 0) +
+                         (stats.by_status.interview_in_progress || 0) +
+                         (stats.by_status.result_awaited || 0)) /
+                          stats.total_applications *
+                          100
+                      )
                     : 0}%
                 </p>
               </div>
@@ -150,9 +182,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {statusBarData
-                .sort((a, b) => b.count - a.count)
-                .map((item) => (
+              {statusBarData.map((item) => (
                   <div key={item.statusKey} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div
