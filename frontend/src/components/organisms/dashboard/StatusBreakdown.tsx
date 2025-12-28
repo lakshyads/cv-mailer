@@ -170,6 +170,45 @@ export function StatusBreakdown({ stats }: StatusBreakdownProps) {
                         </div>
                     </div>
 
+                    {/* Final Outcomes - Early Termination */}
+                    {earlyTerminalStatuses.some(
+                        (s) => (stats.by_status[s as keyof typeof stats.by_status] as number) > 0
+                    ) && (
+                            <div>
+                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                                    Application Closed Summary (Early Termination)
+                                </h4>
+                                <div className="space-y-2 pl-4 border-l-2 border-l-red-500/30">
+                                    {earlyTerminalStatuses.map((statusKey) => {
+                                        const count =
+                                            (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
+                                        if (count === 0) return null;
+                                        return (
+                                            <div key={statusKey} className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <div
+                                                        className="h-3 w-3 rounded-full"
+                                                        style={{
+                                                            backgroundColor: CHART_STATUS_COLORS[statusKey] || '#94a3b8',
+                                                        }}
+                                                    />
+                                                    <span className="text-sm font-medium">
+                                                        {capitalizeFirst(statusKey.replace(/_/g, ' '))}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold">{count}</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        ({stats.total_applications > 0 ? Math.round((count / stats.total_applications) * 100) : 0}%)
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
                     {/* Offer Summary */}
                     <div>
                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
@@ -248,45 +287,6 @@ export function StatusBreakdown({ stats }: StatusBreakdownProps) {
                             })}
                         </div>
                     </div>
-
-                    {/* Final Outcomes - Early Termination */}
-                    {earlyTerminalStatuses.some(
-                        (s) => (stats.by_status[s as keyof typeof stats.by_status] as number) > 0
-                    ) && (
-                            <div>
-                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                                    Final Outcomes (Early Termination)
-                                </h4>
-                                <div className="space-y-2 pl-4 border-l-2 border-l-red-500/30">
-                                    {earlyTerminalStatuses.map((statusKey) => {
-                                        const count =
-                                            (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0;
-                                        if (count === 0) return null;
-                                        return (
-                                            <div key={statusKey} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <div
-                                                        className="h-3 w-3 rounded-full"
-                                                        style={{
-                                                            backgroundColor: CHART_STATUS_COLORS[statusKey] || '#94a3b8',
-                                                        }}
-                                                    />
-                                                    <span className="text-sm font-medium">
-                                                        {capitalizeFirst(statusKey.replace(/_/g, ' '))}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-bold">{count}</span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        ({stats.total_applications > 0 ? Math.round((count / stats.total_applications) * 100) : 0}%)
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
                 </div>
             </CardContent>
         </Card>
