@@ -79,6 +79,16 @@ export interface Statistics {
   total_emails_sent: number;
   follow_ups_sent: number;
   by_status: Record<JobStatus, number>;
+  applications_reached_interviews?: number;
+  applications_reached_out?: number;
+  interview_breakdown?: {
+    interview_scheduled: number;
+    interview_in_progress: number;
+    result_awaited: number;
+    offer_received: number;
+    accepted: number;
+    rejected_after_interview: number;
+  };
   most_applied_companies?: Array<{ company_name: string; count: number }>;
   recent_applications?: Application[];
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { statisticsApi, applicationsApi } from '@/api/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -5,7 +6,7 @@ import { LoadingScreen } from '@/components/ui/Spinner';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDate, capitalizeFirst } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-import { Briefcase, Mail, TrendingUp, Clock, ArrowUpRight } from 'lucide-react';
+import { Briefcase, Mail, TrendingUp, Clock, ArrowUpRight, Info } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 // Status colors matching our flow
@@ -38,6 +39,8 @@ const STATUS_ORDER: string[] = [
 ];
 
 export default function DashboardPage() {
+  const [showInterviewTooltip, setShowInterviewTooltip] = useState(false);
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ['statistics'],
     queryFn: () => statisticsApi.get(),
@@ -56,11 +59,11 @@ export default function DashboardPage() {
   // Show all main flow statuses (applied through offer_received), only show terminal states if count > 0
   const mainFlowStatuses = ['applied', 'reached_out', 'interview_scheduled', 'interview_in_progress', 'result_awaited', 'offer_received'];
   const terminalStatuses = ['accepted', 'rejected', 'ghosted', 'withdrawn'];
-  
+
   const statusBarData = STATUS_ORDER.map((statusKey) => ({
     status: capitalizeFirst(statusKey.replace(/_/g, ' ')),
     statusKey,
-    count: stats.by_status[statusKey] || 0,
+    count: (stats.by_status[statusKey as keyof typeof stats.by_status] as number) || 0,
   })).filter((item) => {
     // Always show main flow statuses, only show terminal if count > 0
     return mainFlowStatuses.includes(item.statusKey) || (terminalStatuses.includes(item.statusKey) && item.count > 0);
@@ -69,7 +72,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-visible">
         <Card className="border-l-4 border-l-primary">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -112,20 +115,21 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card
+          className="border-l-4 border-l-green-500 relative cursor-help overflow-visible"
+          onMouseEnter={() => setShowInterviewTooltip(true)}
+          onMouseLeave={() => setShowInterviewTooltip(false)}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Response Rate</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-muted-foreground">Interview Rate</p>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </div>
                 <p className="text-3xl font-bold">
-                  {stats.total_applications > 0
-                    ? Math.round(
-                        ((stats.by_status.interview_scheduled || 0) +
-                         (stats.by_status.interview_in_progress || 0) +
-                         (stats.by_status.result_awaited || 0)) /
-                          stats.total_applications *
-                          100
-                      )
+                  {(stats.applications_reached_out ?? 0) > 0
+                    ? Math.round(((stats.applications_reached_interviews ?? 0) / (stats.applications_reached_out ?? 1)) * 100)
                     : 0}%
                 </p>
               </div>
@@ -134,6 +138,51 @@ export default function DashboardPage() {
               </div>
             </div>
           </CardContent>
+          {showInterviewTooltip && stats.interview_breakdown && (
+            <div className="absolute top-full left-0 mt-2 z-[100] w-72 p-3 bg-popover border border-border rounded-lg shadow-xl text-sm pointer-events-none">
+              <div className="space-y-2">
+                <p className="font-semibold mb-2">Interview Breakdown</p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span>Interview Scheduled:</span>
+                    <span className="font-medium">{stats.interview_breakdown.interview_scheduled || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Interview In Progress:</span>
+                    <span className="font-medium">{stats.interview_breakdown.interview_in_progress || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Result Awaited:</span>
+                    <span className="font-medium">{stats.interview_breakdown.result_awaited || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Offer Received:</span>
+                    <span className="font-medium">{stats.interview_breakdown.offer_received || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Accepted:</span>
+                    <span className="font-medium">{stats.interview_breakdown.accepted || 0}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1.5 mt-1.5 text-muted-foreground">
+                    <span>Rejected/Ghosted (after interview):</span>
+                    <span className="font-medium">{stats.interview_breakdown.rejected_after_interview || 0}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1.5 mt-1.5 font-semibold">
+                    <span>Total Reached Interviews:</span>
+                    <span>{stats.applications_reached_interviews ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground text-xs">
+                    <span>Out of Reached Out:</span>
+                    <span>{stats.applications_reached_out ?? 0}</span>
+                  </div>
+                </div>
+              </div>
+              {/* Arrow pointer */}
+              <div className="absolute bottom-full left-6 mb-0">
+                <div className="w-3 h-3 bg-popover border-l border-t border-border rotate-45"></div>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
 
@@ -183,22 +232,22 @@ export default function DashboardPage() {
           <CardContent>
             <div className="space-y-3">
               {statusBarData.map((item) => (
-                  <div key={item.statusKey} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: STATUS_COLORS[item.statusKey] }}
-                      />
-                      <span className="text-sm font-medium">{item.status}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold">{item.count}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({Math.round((item.count / stats.total_applications) * 100)}%)
-                      </span>
-                    </div>
+                <div key={item.statusKey} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: STATUS_COLORS[item.statusKey] }}
+                    />
+                    <span className="text-sm font-medium">{item.status}</span>
                   </div>
-                ))}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold">{item.count}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({Math.round((item.count / stats.total_applications) * 100)}%)
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
