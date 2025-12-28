@@ -5,35 +5,49 @@ interface ProgressTrackerProps {
   className?: string;
 }
 
+// Main status flow (one-directional)
 const STATUS_ORDER: JobStatus[] = [
-  'draft',
-  'reached_out',
-  'applied',
-  'interview_scheduled',
-  'interview_in_progress',
-  'result_awaited',
-  'offer_received',
-  'accepted',
+  'applied',              // 1. Initial state - application already submitted
+  'reached_out',          // 2. After sending first contact emails
+  'interview_scheduled',  // 3. Interview scheduled
+  'interview_in_progress', // 4. Interview in progress
+  'result_awaited',       // 5. Waiting for result
+  'offer_received',       // 6. Offer received
+  'accepted',             // 7. Accepted (terminal - positive)
 ];
 
+// Terminal states (not in main flow)
+const TERMINAL_STATES: JobStatus[] = ['rejected', 'ghosted', 'withdrawn'];
+
 const STATUS_LABELS: Record<JobStatus, string> = {
-  draft: 'Draft',
-  reached_out: 'Reached Out',
   applied: 'Applied',
+  reached_out: 'Reached Out',
   interview_scheduled: 'Interview Scheduled',
   interview_in_progress: 'Interview In Progress',
   result_awaited: 'Result Awaited',
   offer_received: 'Offer Received',
+  accepted: 'Accepted',
   rejected: 'Rejected',
   ghosted: 'Ghosted',
-  accepted: 'Accepted',
   withdrawn: 'Withdrawn',
+  draft: 'Draft', // Legacy, not used in main flow
 };
 
 export function ProgressTracker({ currentStatus, className = '' }: ProgressTrackerProps) {
   const currentIndex = STATUS_ORDER.indexOf(currentStatus);
-  const isRejected = currentStatus === 'rejected' || currentStatus === 'ghosted' || currentStatus === 'withdrawn';
+  const isTerminal = TERMINAL_STATES.includes(currentStatus);
   const isAccepted = currentStatus === 'accepted';
+  const isInMainFlow = currentIndex >= 0;
+
+  // Calculate progress width
+  let progressWidth = '0%';
+  if (isTerminal || isAccepted) {
+    // Terminal states show full progress (reached end, just different outcome)
+    progressWidth = '100%';
+  } else if (isInMainFlow) {
+    // Show progress up to current step
+    progressWidth = `${(currentIndex / (STATUS_ORDER.length - 1)) * 100}%`;
+  }
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -45,20 +59,16 @@ export function ProgressTracker({ currentStatus, className = '' }: ProgressTrack
         {/* Progress line */}
         <div className="absolute top-4 left-0 right-0 h-0.5 bg-muted" />
         <div
-          className="absolute top-4 left-0 h-0.5 bg-primary transition-all duration-300"
-          style={{
-            width: isRejected || isAccepted
-              ? '100%'
-              : currentIndex >= 0
-              ? `${(currentIndex / (STATUS_ORDER.length - 1)) * 100}%`
-              : '0%',
-          }}
+          className={`absolute top-4 left-0 h-0.5 transition-all duration-300 ${
+            isTerminal ? 'bg-red-500' : isAccepted ? 'bg-green-500' : 'bg-primary'
+          }`}
+          style={{ width: progressWidth }}
         />
         
         {/* Status points */}
         <div className="relative flex justify-between">
           {STATUS_ORDER.map((status, index) => {
-            const isActive = index <= currentIndex;
+            const isActive = index <= currentIndex && isInMainFlow;
             const isCurrent = status === currentStatus;
             
             return (
@@ -94,11 +104,16 @@ export function ProgressTracker({ currentStatus, className = '' }: ProgressTrack
       </div>
       
       {/* Terminal states */}
-      {(isRejected || isAccepted) && (
-        <div className={`mt-4 p-3 rounded-lg text-sm ${
-          isAccepted ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200'
-        }`}>
+      {isTerminal && (
+        <div className="mt-4 p-3 rounded-lg text-sm bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200">
           <span className="font-medium">{STATUS_LABELS[currentStatus]}</span>
+          <span className="ml-2 text-xs">(Terminal state - application closed)</span>
+        </div>
+      )}
+      {isAccepted && (
+        <div className="mt-4 p-3 rounded-lg text-sm bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200">
+          <span className="font-medium">{STATUS_LABELS[currentStatus]}</span>
+          <span className="ml-2 text-xs">(Application completed successfully)</span>
         </div>
       )}
     </div>
