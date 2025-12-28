@@ -13,10 +13,12 @@ export function useApplicationMutations() {
   const triggerReachOut = useMutation({
     mutationFn: (id: number) => applicationsApi.triggerReachOut(id),
     onSuccess: (data, id) => {
+      // Convert id to string to match query key format from useParams
+      const idString = String(id);
       queryClient.invalidateQueries({ queryKey: ['applications'] });
-      queryClient.invalidateQueries({ queryKey: ['application', id] });
-      queryClient.invalidateQueries({ queryKey: ['application', id, 'emails'] });
-      queryClient.invalidateQueries({ queryKey: ['application', id, 'timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString, 'emails'] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString, 'timeline'] });
       toast.success(data.message || 'Reach-out email sent successfully');
     },
     onError: (error: unknown) => {
@@ -27,10 +29,12 @@ export function useApplicationMutations() {
   const triggerFollowUp = useMutation({
     mutationFn: (id: number) => applicationsApi.triggerFollowUp(id),
     onSuccess: (data, id) => {
+      // Convert id to string to match query key format from useParams
+      const idString = String(id);
       queryClient.invalidateQueries({ queryKey: ['applications'] });
-      queryClient.invalidateQueries({ queryKey: ['application', id] });
-      queryClient.invalidateQueries({ queryKey: ['application', id, 'emails'] });
-      queryClient.invalidateQueries({ queryKey: ['application', id, 'timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString, 'emails'] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString, 'timeline'] });
       toast.success(data.message || 'Follow-up email sent successfully');
     },
     onError: (error: unknown) => {
@@ -42,8 +46,13 @@ export function useApplicationMutations() {
     mutationFn: ({ id, status, notes }: { id: number; status: string; notes?: string }) =>
       applicationsApi.updateStatus(id, status, notes),
     onSuccess: (_data, variables) => {
+      // Invalidate all related queries to ensure UI updates
+      // Convert id to string to match query key format from useParams
+      const idString = String(variables.id);
       queryClient.invalidateQueries({ queryKey: ['applications'] });
-      queryClient.invalidateQueries({ queryKey: ['application', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString, 'timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString, 'emails'] });
       queryClient.invalidateQueries({ queryKey: ['statistics'] });
       toast.success('Status updated successfully');
     },
