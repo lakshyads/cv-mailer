@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { applicationsApi } from '@/api/client';
+import { useQuery } from '@tanstack/react-query';
+import { useApplicationMutations } from '@/hooks/useApplicationMutations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingScreen, Spinner } from '@/components/ui/Spinner';
@@ -13,25 +13,11 @@ import { getValidNextStatuses } from '@/lib/statusTransitions';
 import { ArrowLeft, ExternalLink, Mail, User, Calendar, MapPin, DollarSign, FileText, X, Eye, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import type { JobStatus, EmailRecord } from '@/types';
-
-const STATUS_OPTIONS: JobStatus[] = [
-  'draft',
-  'reached_out',
-  'applied',
-  'interview_scheduled',
-  'interview_in_progress',
-  'result_awaited',
-  'offer_received',
-  'rejected',
-  'ghosted',
-  'accepted',
-  'withdrawn',
-  'offer_rejected',
-];
+import { ALL_JOB_STATUSES } from '@/lib/constants';
+import { extractErrorMessage } from '@/lib/errorHandling';
 
 export default function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const queryClient = useQueryClient();
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [viewingEmail, setViewingEmail] = useState<EmailRecord | null>(null);
@@ -54,54 +40,32 @@ export default function ApplicationDetailPage() {
     enabled: !!id,
   });
 
-  const triggerReachOutMutation = useMutation({
-    mutationFn: () => applicationsApi.triggerReachOut(Number(id)),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['application', id] });
-      queryClient.invalidateQueries({ queryKey: ['application', id, 'emails'] });
-      queryClient.invalidateQueries({ queryKey: ['application', id, 'timeline'] });
-      toast.success(data.message || 'Reach-out email sent successfully');
-    },
-    onError: (error: unknown) => {
-      const message = error && typeof error === 'object' && 'response' in error
-        ? (error as { response?: { data?: { detail?: string } } }).response?.data?.detail
-        : undefined;
-      toast.error(message || 'Failed to send reach-out email');
-    },
-  });
+  const { triggerReachOut, triggerFollowUp, updateStatus } = useApplicationMutations();
 
-  const triggerFollowUpMutation = useMutation({
-    mutationFn: () => applicationsApi.triggerFollowUp(Number(id)),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['application', id] });
-      queryClient.invalidateQueries({ queryKey: ['application', id, 'emails'] });
-      queryClient.invalidateQueries({ queryKey: ['application', id, 'timeline'] });
-      toast.success(data.message || 'Follow-up email sent successfully');
-    },
-    onError: (error: unknown) => {
-      const message = error && typeof error === 'object' && 'response' in error
-        ? (error as { response?: { data?: { detail?: string } } }).response?.data?.detail
-        : undefined;
-      toast.error(message || 'Failed to send follow-up email');
-    },
-  });
+  const handleTriggerReachOut = () => {
+    if (id) {
+      triggerReachOut.mutate(Number(id));
+    }
+  };
 
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ status, notes }: { status: string; notes?: string }) =>
-      applicationsApi.updateStatus(Number(id), status, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['application', id] });
-      queryClient.invalidateQueries({ queryKey: ['applications'] });
-      toast.success('Status updated successfully');
-      setSelectedStatus('');
-      setNotes('');
-    },
-    onError: (error: any) => {
-      // Show the actual error message from the API
-      const errorMessage = error?.response?.data?.detail || 'Failed to update status';
-      toast.error(errorMessage);
-    },
-  });
+  const handleTriggerFollowUp = () => {
+    if (id) {
+      triggerFollowUp.mutate(Number(id));
+    }
+  };
+
+  const handleUpdateStatus = () => {
+    if (!selectedStatus || !id) {
+      toast.error('Please select a status');
+      return;
+    }
+    updateStatus.mutate({ id: Number(id), status: selectedStatus, notes: notes || undefined }, {
+      onSuccess: () => {
+        setSelectedStatus('');
+        setNotes('');
+      },
+    });
+  };
 
   if (isLoading || !application) {
     return <LoadingScreen />;
@@ -109,13 +73,6 @@ export default function ApplicationDetailPage() {
 
   const emails = emailsData?.emails || [];
 
-  const handleUpdateStatus = () => {
-    if (!selectedStatus) {
-      toast.error('Please select a status');
-      return;
-    }
-    updateStatusMutation.mutate({ status: selectedStatus, notes: notes || undefined });
-  };
 
   // TypeScript: application is guaranteed to be defined here due to early return above
   const app = application;
@@ -263,7 +220,7 @@ export default function ApplicationDetailPage() {
                         onClick={() => triggerReachOutMutation.mutate()}
                         disabled={triggerReachOutMutation.isPending}
                       >
-                        {triggerReachOutMutation.isPending ? (
+                        {triggerReachOut.isPending ? (
                           <>
                             <Spinner size="sm" className="mr-2" />
                             Sending...
@@ -390,12 +347,12 @@ export default function ApplicationDetailPage() {
               </Button>
 
               <Button
-                onClick={() => triggerFollowUpMutation.mutate()}
-                disabled={triggerFollowUpMutation.isPending}
+                onClick={handleTriggerFollowUp}
+                disabled={triggerFollowUp.isPending}
                 className="w-full"
                 variant="outline"
               >
-                {triggerFollowUpMutation.isPending ? (
+                {triggerFollowUp.isPending ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
                     Sending...
@@ -414,7 +371,7 @@ export default function ApplicationDetailPage() {
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
                   className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  disabled={updateStatusMutation.isPending}
+                  disabled={updateStatus.isPending}
                 >
                   <option value="">Select status...</option>
                   {application && (() => {
@@ -453,10 +410,10 @@ export default function ApplicationDetailPage() {
 
               <Button
                 onClick={handleUpdateStatus}
-                disabled={!selectedStatus || updateStatusMutation.isPending}
+                disabled={!selectedStatus || updateStatus.isPending}
                 className="w-full"
               >
-                {updateStatusMutation.isPending ? (
+                {updateStatus.isPending ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
                     Updating...
