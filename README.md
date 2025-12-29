@@ -2,303 +2,135 @@
 
 An automated system for emailing resumes to recruiters with comprehensive tracking and follow-up management.
 
-## Features
-
-- 📊 **Google Sheets Integration**: Read job postings and recruiter details from Google Sheets
-- 📧 **Gmail Integration**: Send emails directly from your Gmail account
-- 📎 **Resume Attachments**: Attach resume files or include Google Drive links
-- 🔄 **Follow-up Management**: Automatically track and send follow-up emails
-- 📈 **Comprehensive Tracking**: Track all communications, responses, and application status
-- ⚡ **Rate Limiting**: Built-in rate limiting to avoid Gmail throttling
-- 🎯 **Status Management**: Track applications through the entire lifecycle (draft → reached out → interview → closed)
-- 📝 **Email Templates**: Professional email templates for first contact and follow-ups
-
-## Architecture
-
-The application is built with a modular architecture:
-
-- **`config.py`**: Configuration management with environment variables
-- **`models.py`**: Database models for tracking (SQLite)
-- **`google_sheets.py`**: Google Sheets API integration
-- **`gmail_sender.py`**: Gmail API integration with rate limiting
-- **`email_templates.py`**: Email template system (Jinja2)
-- **`tracker.py`**: Application tracking and status management
-- **`main.py`**: Main orchestrator and CLI interface
-
-## Prerequisites
-
-1. **Python 3.8+**
-2. **Virtual Environment** (recommended - will be created during setup)
-3. **Google Cloud Project** with APIs enabled:
-   - Google Sheets API
-   - Gmail API
-4. **Google OAuth Credentials** (download as `credentials.json`)
-
-**Note**: This project uses a Python virtual environment to manage dependencies. Always activate it before running commands (see Usage section below).
-
-## Setup
-
-### 1. Install Dependencies
+## 🚀 Quick Start
 
 ```bash
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+./setup.sh                    # Automated setup
+source venv/bin/activate      # Activate virtual environment
+cv-mailer --dry-run           # Test it out
+cv-mailer                     # Start sending emails
 ```
 
-### 2. Google Cloud Setup
+👉 **New to CV Mailer?** Start with the [Quick Start Guide](docs/QUICK_START.md) (5 minutes)
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the following APIs:
-   - Google Sheets API
-   - Gmail API
-4. Create OAuth 2.0 credentials:
-   - Go to "APIs & Services" > "Credentials"
-   - Click "Create Credentials" > "OAuth client ID"
-   - Choose "Desktop app"
-   - Download the JSON file and save it as `credentials.json` in the project root
+## ✨ Features
 
-### 3. Google Sheets Setup
+See [Changelog](docs/CHANGELOG.md) for complete feature list and recent improvements.
 
-1. Create a Google Sheet with the following columns (adjust as needed):
-   - `Company Name`
-   - `Position`
-   - `Recruiter Name`
-   - `Recruiter Email`
-   - `Location` (optional)
-   - `Job Posting URL` (optional)
-   - `Status` (optional - will be auto-updated)
+**Key Features:**
 
-2. Share the sheet with the service account email (if using service account) or ensure your OAuth account has access
+- 🌐 **Web Dashboard** - Modern React UI for managing applications
+- 📊 **Google Sheets Integration** - Read job applications from spreadsheets
+- 📧 **Gmail Integration** - Send emails with built-in rate limiting
+- 🔄 **Follow-up Management** - Automatic follow-ups based on your schedule
+- 🚀 **REST API** - FastAPI-based API with OpenAPI docs
+- ⚡ **Production-Ready** - Enterprise-grade architecture and code quality
 
-3. Get the Spreadsheet ID from the URL:
+**For complete feature details:** See [Changelog](docs/CHANGELOG.md) | [Roadmap](docs/design/FEATURE_SUGGESTIONS.md)
 
-   ```md
-   https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
-   ```
+## 📚 Documentation
 
-### 4. Configuration
+**📖 [Complete Documentation Index](docs/INDEX.md)** - Start here for all documentation
 
-1. Copy `.env.example` to `.env`:
+### Quick Links
 
-   ```bash
-   cp .env.example .env
-   ```
+- **[Quick Start Guide](docs/QUICK_START.md)** ⚡ - Get running in 5 minutes
+- **[Setup Guide](docs/SETUP_GUIDE.md)** 🔧 - Detailed setup instructions
+- **[Web Dashboard Guide](docs/WEB_DASHBOARD_GUIDE.md)** 🌐 - Web UI usage
+- **[API Guide](docs/API_GUIDE.md)** 🚀 - REST API documentation
+- **[Changelog](docs/CHANGELOG.md)** 📝 - What's new and changed
+- **[Architecture](docs/design/ARCHITECTURE.md)** 🏗️ - System design
+- **[Roadmap](docs/design/FEATURE_SUGGESTIONS.md)** 🎯 - Planned features
 
-2. Edit `.env` with your settings:
+## 🏗️ Architecture
 
-   ```env
-   SPREADSHEET_ID=your_spreadsheet_id_here
-   WORKSHEET_NAME=Sheet1
-   GMAIL_USER=your_email@gmail.com
-   SENDER_NAME=Your Name
-   # Optional: signature fields used in templates
-   LINKEDIN_PROFILE=https://www.linkedin.com/in/your-handle
-   CONTACT_INFORMATION=your_email@gmail.com | +971 5X XXX XXXX
-   # Recommended: set BOTH (attach the file + include a Drive link in the email)
-   RESUME_FILE_PATH=./resume.pdf
-   RESUME_DRIVE_LINK=https://drive.google.com/file/d/...
-   ```
+**Production-ready, enterprise-grade architecture with single source of truth:**
 
-### 5. Resume Setup
-
-You can set either (minimum) or both (recommended):
-
-- **Attachment**: Place your resume PDF in the project directory and set `RESUME_FILE_PATH`
-- **Drive link**: Upload to Google Drive and set `RESUME_DRIVE_LINK` (make sure it's shareable)
-
-## Usage
-
-### ⚠️ Important: Activate Virtual Environment First
-
-**Always activate the virtual environment before running commands:**
-
-```bash
-# Activate virtual environment
-source venv/bin/activate  # On macOS/Linux
-# OR
-venv\Scripts\activate     # On Windows
-
-# You should see (venv) in your terminal prompt
+```text
+Presentation Layer (CLI + API)
+    ↓ (Both call same services)
+Service Layer (Business Logic) ⭐ SINGLE SOURCE OF TRUTH
+    ↓
+Repository Layer (Data Access)
+    ↓
+Database (SQLite with indexes)
 ```
 
-### Basic Usage
+**Key Principle:** All business logic resides in the service layer.  
+Both CLI and API use the same service methods → No duplication, always in sync.
 
-Process new applications from Google Sheets:
+📖 **Architecture Docs:**
 
-```bash
-# Make sure venv is activated first!
-python main.py
+- **[Architecture Guide](docs/design/ARCHITECTURE.md)** ⭐ Complete architecture documentation
+
+## 📦 Installation
+
+See [Quick Start Guide](docs/QUICK_START.md) for 5-minute setup or [Complete Setup Guide](docs/SETUP_GUIDE.md) for detailed instructions.
+
+## 💻 Usage
+
+See [Command Reference](docs/COMMANDS.md) for all available commands.
+
+**Quick Commands:**
+
+- `cv-mailer` - Process new applications
+- `cv-mailer-api` - Start REST API server
+- `cd frontend && npm run dev` - Start web dashboard
+
+**For complete usage:** See [Command Reference](docs/COMMANDS.md) | [API Guide](docs/API_GUIDE.md) | [Web Dashboard Guide](docs/WEB_DASHBOARD_GUIDE.md)
+
+## 🔧 Configuration
+
+See [Setup Guide - Configuration](docs/SETUP_GUIDE.md#step-3-configure-environment-variables) for complete configuration options.
+
+## 🗂️ Project Structure
+
+```text
+cv-mailer/
+├── src/cv_mailer/     # Main package
+├── docs/              # Documentation
+├── data/              # Database files
+├── logs/              # Application logs
+└── assets/            # Resume files
 ```
 
-### Command Line Options
+## 🐛 Troubleshooting
 
-```bash
-# Dry run (test without sending emails)
-python main.py --dry-run
+See [Troubleshooting Guide](docs/TROUBLESHOOTING.md) for solutions to common issues.
 
-# Send follow-up emails only
-python main.py --follow-ups
+## 🔐 Security
 
-# Show statistics
-python main.py --stats
+- Never commit `credentials.json`, `.env`, or `*.pickle` files
+- Use environment variables for sensitive data
+- Keep OAuth tokens secure
+- Regular database backups recommended
 
-# Process new applications only
-python main.py --new
-```
+## 🤝 Contributing
 
-### Virtual Environment Quick Reference
+1. Fork the repository
+2. Create a feature branch
+3. Follow code style (Black, isort)
+4. Add tests for new features
+5. Update documentation
+6. Submit a pull request
 
-```bash
-# Activate virtual environment
-source venv/bin/activate          # macOS/Linux
-venv\Scripts\activate             # Windows
+## 📄 License
 
-# Deactivate virtual environment
-deactivate
+MIT License - See LICENSE file for details
 
-# Check if venv is active (look for (venv) in prompt)
-# If you don't see (venv), activate it first!
+## 📞 Support
 
-# Install/update dependencies
-pip install -r requirements.txt
+- **Issues**: <https://github.com/lakshyads/cv-mailer/issues>
+- **Documentation**: See `docs/` directory
+- **Email**: <lakshyads.96@gmail.com>
 
-# Create new virtual environment (if needed)
-python3 -m venv venv
-```
+## 🙏 Credits
 
-### First Run
+Developed by **Lakshya Dev Singh**
 
-On first run, the application will:
+- GitHub: [@lakshyads](https://github.com/lakshyads)
+- Email: <lakshyads.96@gmail.com>
 
-1. Open a browser for OAuth authentication
-2. Ask you to authorize access to Google Sheets and Gmail
-3. Save the credentials for future use
+---
 
-## Gmail Rate Limits
-
-Gmail has rate limits to prevent abuse:
-
-- **Free Gmail accounts**: ~500 emails/day
-- **Google Workspace**: ~2000 emails/day
-
-The application includes:
-
-- Configurable delays between emails (default: 0.1-0.5 seconds)
-- Daily email limit tracking (default: 50/day, adjust in `.env`)
-- Automatic rate limiting
-
-**Important**: Start with conservative limits and gradually increase. Gmail may throttle or suspend accounts that send too many emails too quickly.
-
-## Database
-
-The application uses SQLite to track:
-
-- Job applications
-- Email records (sent, failed, bounced)
-- Follow-up tracking
-- Response records
-- Daily email statistics
-
-Database file: `cv_mailer.db` (created automatically)
-
-## Email Templates
-
-### First Contact Email
-
-Includes:
-
-- Personalized greeting
-- Position and company information
-- Resume attachment or drive link
-- Professional closing
-
-### Follow-up Email
-
-Includes:
-
-- Reference to previous email
-- Continued interest expression
-- Request for updates
-
-Templates can be customized in `email_templates.py`.
-
-## Application Status Flow
-
-```sh
-DRAFT → REACHED_OUT → APPLIED → INTERVIEW_SCHEDULED → IN_PROGRESS → CLOSED
-                                                      ↓
-                                                   REJECTED
-                                                   ACCEPTED
-```
-
-## Tracking Features
-
-The system tracks:
-
-- ✅ When emails were sent
-- ✅ Email type (first contact vs follow-up)
-- ✅ Follow-up count and timing
-- ✅ Application status
-- ✅ Response tracking
-- ✅ Daily email statistics
-
-## Future Enhancements
-
-Planned features:
-
-- Web UI for managing applications
-- Email response parsing
-- Calendar integration for interviews
-- Analytics dashboard
-- Multi-resume support
-- Custom email templates per job type
-
-## Troubleshooting
-
-### Authentication Issues
-
-If you see authentication errors:
-
-1. Delete `token.pickle` and `gmail_token.pickle`
-2. Re-run the application to re-authenticate
-3. Ensure `credentials.json` is in the project root
-
-### Rate Limiting
-
-If emails are being throttled:
-
-1. Increase `EMAIL_DELAY_MIN` and `EMAIL_DELAY_MAX` in `.env`
-2. Decrease `DAILY_EMAIL_LIMIT`
-3. Wait 24 hours before resuming
-
-### Google Sheets Access
-
-If you can't read from Google Sheets:
-
-1. Ensure the sheet is shared with your Google account
-2. Check that `SPREADSHEET_ID` is correct
-3. Verify `WORKSHEET_NAME` matches your sheet tab name
-
-## Security Best Practices
-
-1. **Never commit credentials**: `credentials.json`, `.env`, and `*.pickle` files are in `.gitignore`
-2. **Use environment variables**: Keep sensitive data in `.env`
-3. **Limit permissions**: Only grant necessary OAuth scopes
-4. **Regular backups**: Backup your database file regularly
-
-## License
-
-This project is open source and available for personal use.
-
-## Contributing
-
-Feel free to submit issues and enhancement requests!
-
-## Support
-
-For issues or questions, please open an issue on the project repository.
+**Version**: 1.1.0 | **Status**: Production Ready

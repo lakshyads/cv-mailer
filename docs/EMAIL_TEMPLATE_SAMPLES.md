@@ -1,6 +1,9 @@
-# Email Templates
+# Email Template Samples
 
-Create a template based on given samples as suitable.
+**Sample email templates and customization guide.**
+
+> 📖 **Customization**: Edit templates in `src/cv_mailer/services/template_service.py`  
+> 📚 **Setup**: See [Quick Start](QUICK_START.md) | [Setup Guide](SETUP_GUIDE.md)
 
 ---
 
