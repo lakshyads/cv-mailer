@@ -55,6 +55,9 @@ export function ApplicationsTableRow({
                 </td>
             )}
             <td className={paddingClass}>
+                <StatusBadge status={app.status} size={size} />
+            </td>
+            <td className={paddingClass}>
                 <Link
                     to={`/applications/${app.id}`}
                     className={`flex items-center gap-2 group-hover:text-primary transition-colors ${size === 'sm' ? '' : ''}`}
@@ -90,9 +93,6 @@ export function ApplicationsTableRow({
                         )}
                     </div>
                 </Link>
-            </td>
-            <td className={paddingClass}>
-                <StatusBadge status={app.status} size={size} />
             </td>
             {showCreatedAt && (
                 <td className={`${paddingClass} ${textSizeClass} text-muted-foreground`}>

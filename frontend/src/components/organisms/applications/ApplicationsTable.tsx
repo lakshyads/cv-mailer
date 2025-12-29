@@ -1,5 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Fragment } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
 import { Spinner } from '@/components/atoms/ui/Spinner';
 import { ProgressTracker } from '@/components/organisms/shared/ProgressTracker';
@@ -7,114 +6,7 @@ import { SortableTableHeader } from '@/components/molecules/SortableTableHeader'
 import { ApplicationsTableRow } from '@/components/organisms/applications/ApplicationsTableRow';
 import { Send, MoreVertical } from 'lucide-react';
 import type { Application, JobStatus } from '@/types';
-
-// Action menu component that uses portal to avoid clipping
-interface ActionMenuProps {
-  appId: number;
-  isOpen: boolean;
-  isLastItem: boolean;
-  onToggle: () => void;
-  onTriggerReachOut: () => void;
-  onTriggerFollowUp: () => void;
-  onUpdateStatus: (status: string) => void;
-  validNextStatuses: JobStatus[];
-  isTriggeringReachOut: boolean;
-  isTriggeringFollowUp: boolean;
-  isUpdatingStatus: boolean;
-}
-
-function ActionMenu({
-  appId,
-  isOpen,
-  isLastItem,
-  onToggle,
-  onTriggerReachOut,
-  onTriggerFollowUp,
-  onUpdateStatus,
-  validNextStatuses,
-  isTriggeringReachOut,
-  isTriggeringFollowUp,
-  isUpdatingStatus,
-}: ActionMenuProps) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
-
-  useEffect(() => {
-    if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setPosition({
-        top: isLastItem ? rect.top - 1 : rect.bottom + 4,
-        right: window.innerWidth - rect.right,
-      });
-    } else {
-      setPosition(null);
-    }
-  }, [isOpen, isLastItem]);
-
-  const menuContent = isOpen && position ? (
-    <div
-      className="fixed z-[100] w-48 rounded-md border bg-popover shadow-lg"
-      style={{
-        top: `${position.top}px`,
-        right: `${position.right}px`,
-        transform: isLastItem ? 'translateY(-100%)' : 'none',
-      }}
-    >
-      <div className="p-1">
-        <button
-          onClick={onTriggerReachOut}
-          disabled={isTriggeringReachOut}
-          className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted flex items-center gap-2 disabled:opacity-50"
-        >
-          <Send className="h-4 w-4" />
-          {isTriggeringReachOut ? 'Sending...' : 'Reach Out'}
-        </button>
-        <button
-          onClick={onTriggerFollowUp}
-          disabled={isTriggeringFollowUp}
-          className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted flex items-center gap-2 disabled:opacity-50"
-        >
-          <Send className="h-4 w-4" />
-          {isTriggeringFollowUp ? 'Sending...' : 'Follow Up'}
-        </button>
-        {validNextStatuses.length > 0 && (
-          <>
-            <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-              Quick Status:
-            </div>
-            {validNextStatuses.map((status) => (
-              <button
-                key={status}
-                onClick={() => onUpdateStatus(status)}
-                disabled={isUpdatingStatus}
-                className="w-full text-left px-3 py-2 text-xs rounded-md hover:bg-muted disabled:opacity-50"
-              >
-                {status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-              </button>
-            ))}
-          </>
-        )}
-      </div>
-    </div>
-  ) : null;
-
-  return (
-    <div className="flex items-center justify-end gap-2">
-      <div className="relative">
-        <button
-          ref={buttonRef}
-          onClick={onToggle}
-          className="p-1 hover:bg-muted rounded transition-colors"
-          aria-label="More actions"
-          data-app-id={appId}
-        >
-          <MoreVertical className="h-4 w-4 text-muted-foreground" />
-        </button>
-        {menuContent && createPortal(menuContent, document.body)}
-      </div>
-    </div>
-  );
-}
+import { StatusBadge } from '@/components/atoms/StatusBadge';
 
 type SortField = 'created_at' | 'updated_at' | 'status' | null;
 type SortOrder = 'asc' | 'desc';
@@ -197,14 +89,6 @@ export function ApplicationsTable({
               <thead>
                 <tr className="border-b">
                   <th className="text-left py-3 px-4 font-semibold text-sm w-8"></th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">
-                    <button
-                      onClick={() => onSort(null)}
-                      className="flex items-center gap-2 hover:text-primary transition-colors"
-                    >
-                      Company / Position
-                    </button>
-                  </th>
                   <SortableTableHeader
                     field="status"
                     currentSort={sortBy}
@@ -213,6 +97,14 @@ export function ApplicationsTable({
                   >
                     Status
                   </SortableTableHeader>
+                  <th className="text-left py-3 px-4 font-semibold text-sm">
+                    <button
+                      onClick={() => onSort(null)}
+                      className="flex items-center gap-2 hover:text-primary transition-colors"
+                    >
+                      Company / Position
+                    </button>
+                  </th>
                   <SortableTableHeader
                     field="created_at"
                     currentSort={sortBy}
@@ -289,8 +181,9 @@ export function ApplicationsTable({
                                     </button>
                                     {validNextStatuses.length > 0 && (
                                       <>
-                                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                                          Quick Status:
+                                        <div className="border-t my-1" />
+                                        <div className="px-3 py-1 text-xs font-medium text-muted-foreground text-left">
+                                          Update Status To:
                                         </div>
                                         {validNextStatuses.map((status) => (
                                           <button
@@ -302,9 +195,10 @@ export function ApplicationsTable({
                                             disabled={isUpdatingStatus(app.id)}
                                             className="w-full text-left px-3 py-2 text-xs rounded-md hover:bg-muted disabled:opacity-50"
                                           >
-                                            {status.replace(/_/g, ' ').replace(/\b\w/g, (l) =>
+                                            <StatusBadge status={status} size={'sm'} />
+                                            {/* {status.replace(/_/g, ' ').replace(/\b\w/g, (l) =>
                                               l.toUpperCase()
-                                            )}
+                                            )} */}
                                           </button>
                                         ))}
                                       </>
