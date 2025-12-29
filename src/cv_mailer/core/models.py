@@ -65,11 +65,12 @@ class JobApplication(Base):
     notes: "Column[str]" = Column(Text)
 
     # Timestamps (all stored as UTC in database)
-    created_at: "Column[datetime]" = Column(UTCDateTime, default=datetime.now(timezone.utc))
+    # Use lambda to ensure datetime is evaluated at creation time, not module load time
+    created_at: "Column[datetime]" = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         UTCDateTime,
-        default=datetime.now(timezone.utc),
-        onupdate=datetime.now(timezone.utc),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
     applied_at = Column(UTCDateTime)
     closed_at = Column(UTCDateTime)
@@ -107,7 +108,8 @@ class StatusHistory(Base):
     notes = Column(Text)  # Optional notes from the status change
 
     # Timestamp (stored as UTC in database)
-    changed_at = Column(UTCDateTime, default=datetime.now(timezone.utc), nullable=False)
+    # Use lambda to ensure datetime is evaluated at creation time, not module load time
+    changed_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationship
     job_application = relationship("JobApplication", backref="status_history")
@@ -149,7 +151,8 @@ class EmailRecord(Base):
     follow_up_number = Column(Integer, default=0)  # 0 = first contact, 1+ = follow-up number
 
     # Timestamps (all stored as UTC in database)
-    created_at = Column(UTCDateTime, default=datetime.now(timezone.utc))
+    # Use lambda to ensure datetime is evaluated at creation time, not module load time
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
     sent_at = Column(UTCDateTime)
 
     # Relationships
@@ -172,11 +175,12 @@ class Recruiter(Base):
     email = Column(String(255), nullable=False, unique=True)
 
     # Timestamps (all stored as UTC in database)
-    created_at = Column(UTCDateTime, default=datetime.now(timezone.utc))
+    # Use lambda to ensure datetime is evaluated at creation time, not module load time
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         UTCDateTime,
-        default=datetime.now(timezone.utc),
-        onupdate=datetime.now(timezone.utc),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     # Relationships
@@ -203,7 +207,8 @@ class ResponseRecord(Base):
     responded_at = Column(UTCDateTime)
 
     # Timestamps (all stored as UTC in database)
-    created_at = Column(UTCDateTime, default=datetime.now(timezone.utc))
+    # Use lambda to ensure datetime is evaluated at creation time, not module load time
+    created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     job_application = relationship("JobApplication")

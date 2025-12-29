@@ -107,8 +107,19 @@ class SyncService:
                     unique_row_id = f"{sheet_name}_{row_id}"
 
                     # Skip if required fields missing
-                    if not company_name or not position or not recruiters:
-                        logger.warning(f"Skipping {sheet_name}:row {row_id}: " f"missing fields")
+                    missing_fields = []
+                    if not company_name:
+                        missing_fields.append("company_name")
+                    if not position:
+                        missing_fields.append("position")
+                    if not recruiters:
+                        missing_fields.append("recruiters")
+
+                    if missing_fields:
+                        logger.warning(
+                            f"Skipping {sheet_name}:row {row_id}: "
+                            f"missing required fields: {', '.join(missing_fields)}"
+                        )
                         skipped_count += 1
                         continue
 
@@ -215,8 +226,10 @@ class SyncService:
                 message += f", {len(errors)} errors"
 
             # Log sync completion summary at INFO level for observability
+            dry_run_status = " (dry run)" if dry_run else ""
             logger.info(
-                f"Sync completed: {sent_count} emails sent, {skipped_count} skipped, "
+                f"Sync completed{dry_run_status}: {sent_count} emails "
+                f"{'would be sent' if dry_run else 'sent'}, {skipped_count} skipped, "
                 f"{len(rows)} total rows processed, {len(errors)} errors"
             )
 
@@ -302,8 +315,10 @@ class SyncService:
                 message += f", {len(errors)} errors"
 
             # Log follow-up completion summary at INFO level for observability
+            dry_run_status = " (dry run)" if dry_run else ""
             logger.info(
-                f"Follow-up completed: {sent_count} emails sent, {skipped_count} skipped, "
+                f"Follow-up completed{dry_run_status}: {sent_count} emails "
+                f"{'would be sent' if dry_run else 'sent'}, {skipped_count} skipped, "
                 f"{len(applications)} total needing follow-up, {len(errors)} errors"
             )
 

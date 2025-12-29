@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize database (infrastructure setup - not business logic)
 init_database()
-logger.info("Database initialized")
+logger.info(f"Database initialized: {Config.DATABASE_PATH}")
 
 # Create FastAPI app
 app = FastAPI(
