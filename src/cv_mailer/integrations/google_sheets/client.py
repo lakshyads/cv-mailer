@@ -9,6 +9,8 @@ from googleapiclient.errors import HttpError
 
 from cv_mailer.config import Config
 from cv_mailer.integrations.google_sheets.auth import SheetsAuthenticator
+from cv_mailer.utils.exceptions import ExternalServiceError
+from cv_mailer.utils.logging_utils import log_function_call, log_execution_time
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,7 @@ class GoogleSheetsClient:
         """Authenticate with Google Sheets API."""
         self.service = SheetsAuthenticator.authenticate()
 
+    @log_function_call(logger)
     def list_all_sheets(self) -> List[Dict]:
         """
         List all worksheets in the spreadsheet.
@@ -50,8 +53,10 @@ class GoogleSheetsClient:
 
         except HttpError as error:
             logger.error(f"Error listing sheets: {error}")
-            raise
+            raise ExternalServiceError(f"Google Sheets API error: {error}")
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def read_all_rows(self, worksheet_name: str = None) -> List[Dict]:
         """
         Read all rows from the worksheet.
@@ -95,8 +100,10 @@ class GoogleSheetsClient:
 
         except HttpError as error:
             logger.error(f"Error reading from Google Sheets: {error}")
-            raise
+            raise ExternalServiceError(f"Google Sheets API error: {error}")
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def read_all_sheets(self, sheet_filter: Optional[str] = None) -> List[Dict]:
         """
         Read all rows from all worksheets in the spreadsheet.
@@ -125,13 +132,18 @@ class GoogleSheetsClient:
                 rows = self.read_all_rows(sheet_name)
                 all_rows.extend(rows)
                 logger.info(f"Read {len(rows)} rows from sheet: {sheet_name}")
+            except ExternalServiceError:
+                # Re-raise ExternalServiceError
+                raise
             except Exception as e:
                 logger.warning(f"Error reading sheet {sheet_name}: {e}")
-                continue
+                # Wrap in ExternalServiceError for consistency
+                raise ExternalServiceError(f"Error reading sheet {sheet_name}: {e}")
 
         logger.info(f"Total rows read from all sheets: {len(all_rows)}")
         return all_rows
 
+    @log_function_call(logger)
     def update_cell(self, row: int, column: str, value: str, worksheet_name: str = None):
         """
         Update a specific cell in the worksheet.
@@ -158,8 +170,9 @@ class GoogleSheetsClient:
 
         except HttpError as error:
             logger.error(f"Error updating Google Sheets: {error}")
-            raise
+            raise ExternalServiceError(f"Google Sheets API error: {error}")
 
+    @log_function_call(logger)
     def update_row(self, row: int, updates: Dict[str, str], worksheet_name: str = None):
         """
         Update multiple cells in a row.
@@ -195,8 +208,9 @@ class GoogleSheetsClient:
 
         except HttpError as error:
             logger.error(f"Error updating row in Google Sheets: {error}")
-            raise
+            raise ExternalServiceError(f"Google Sheets API error: {error}")
 
+    @log_function_call(logger)
     def get_column_letter(self, column_name: str, worksheet_name: str = None) -> Optional[str]:
         """
         Get the column letter for a given column name.

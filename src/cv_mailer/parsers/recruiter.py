@@ -7,6 +7,8 @@ import re
 import logging
 from typing import List, Dict, Optional
 
+from cv_mailer.utils.logging_utils import log_function_call
+
 logger = logging.getLogger(__name__)
 
 
@@ -14,6 +16,7 @@ class RecruiterParser:
     """Parse recruiter information from various formats."""
 
     @staticmethod
+    @log_function_call(logger)
     def parse_recruiters(cell_value: str) -> List[Dict[str, str]]:
         """
         Parse recruiter information from a cell that may contain multiple recruiters.

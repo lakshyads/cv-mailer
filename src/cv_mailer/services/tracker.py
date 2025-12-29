@@ -3,7 +3,7 @@ Tracking system for job applications and email communications.
 """
 
 import logging
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 
@@ -16,7 +16,9 @@ from cv_mailer.core import (
     EmailStatus,
     Recruiter,
 )
-from cv_mailer.utils import get_session
+from cv_mailer.utils import get_session, NotFoundError
+from cv_mailer.utils.logging_utils import log_function_call, log_execution_time
+from cv_mailer.core.status_constants import STATUSES_THAT_CLOSE_APPLICATION
 from cv_mailer.config import Config
 
 logger = logging.getLogger(__name__)
@@ -34,6 +36,7 @@ class ApplicationTracker:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.session.close()
 
+    @log_function_call(logger)
     def get_or_create_job_application(
         self,
         spreadsheet_row_id: str,  # Changed to str to support "sheet_name_row" format
@@ -99,6 +102,7 @@ class ApplicationTracker:
         )
         return app
 
+    @log_function_call(logger)
     def _link_recruiters_to_application(
         self, app: JobApplication, recruiters: List[Dict[str, str]]
     ):
@@ -127,6 +131,7 @@ class ApplicationTracker:
             if recruiter not in app.recruiters:
                 app.recruiters.append(recruiter)
 
+    @log_function_call(logger)
     def record_email_sent(
         self,
         job_application_id: int,
@@ -142,7 +147,7 @@ class ApplicationTracker:
         """Record that an email was sent."""
         job_app = self.session.query(JobApplication).get(job_application_id)
         if not job_app:
-            raise ValueError(f"Job application {job_application_id} not found")
+            raise NotFoundError(f"Job application {job_application_id} not found")
 
         email_record = EmailRecord(
             job_application_id=job_application_id,
@@ -167,6 +172,7 @@ class ApplicationTracker:
         logger.info(log)
         return email_record
 
+    @log_function_call(logger)
     def record_email_failed(
         self,
         job_application_id: int,
@@ -180,7 +186,7 @@ class ApplicationTracker:
         """Record that an email failed to send."""
         job_app = self.session.query(JobApplication).get(job_application_id)
         if not job_app:
-            raise ValueError(f"Job application {job_application_id} not found")
+            raise NotFoundError(f"Job application {job_application_id} not found")
 
         email_record = EmailRecord(
             job_application_id=job_application_id,
@@ -199,6 +205,8 @@ class ApplicationTracker:
             f"Recorded email failure for job application {job_application_id}: {error_message}"
         )
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def get_applications_needing_follow_up(self) -> List[JobApplication]:
         """Get job applications that need follow-up emails."""
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=Config.FOLLOW_UP_DAYS)
@@ -249,7 +257,8 @@ class ApplicationTracker:
 
         return needing_follow_up
 
-    def can_send_follow_up(self, job_application_id: int) -> tuple[bool, str]:
+    @log_function_call(logger)
+    def can_send_follow_up(self, job_application_id: int) -> Tuple[bool, str]:
         """
         Check if an application can receive a follow-up email.
 
@@ -310,6 +319,7 @@ class ApplicationTracker:
 
         return True, "OK"
 
+    @log_function_call(logger)
     def get_next_follow_up_number(self, job_application_id: int) -> int:
         """Get the next follow-up number for a job application."""
         # EmailRecord is stored per-recipient, so counting rows breaks when an application
@@ -326,6 +336,8 @@ class ApplicationTracker:
 
         return int(last_follow_up_number) + 1
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def repair_follow_up_numbers(self, dry_run: bool = True) -> Dict[str, int]:
         """
         Repair follow-up numbering for multi-recruiter applications.
@@ -406,13 +418,14 @@ class ApplicationTracker:
 
         return stats
 
+    @log_function_call(logger)
     def update_job_status(
         self, job_application_id: int, status: JobStatus, notes: Optional[str] = None
     ):
         """Update job application status and record in history."""
         app = self.session.query(JobApplication).get(job_application_id)
         if not app:
-            raise ValueError(f"Job application {job_application_id} not found")
+            raise NotFoundError(f"Job application {job_application_id} not found")
 
         # Record status change in history before updating
         from cv_mailer.core import StatusHistory
@@ -434,25 +447,16 @@ class ApplicationTracker:
             app.notes = notes
 
         # Set closed_at for terminal states
-        if status in [
-            JobStatus.REJECTED,
-            JobStatus.GHOSTED,
-            JobStatus.ACCEPTED,
-            JobStatus.WITHDRAWN,
-        ]:
+        if status in STATUSES_THAT_CLOSE_APPLICATION:
             app.closed_at = datetime.now(timezone.utc)
-        elif app.closed_at and status not in [
-            JobStatus.REJECTED,
-            JobStatus.GHOSTED,
-            JobStatus.ACCEPTED,
-            JobStatus.WITHDRAWN,
-        ]:
+        elif app.closed_at and status not in STATUSES_THAT_CLOSE_APPLICATION:
             # Reopen if status changes from terminal to non-terminal
             app.closed_at = None
 
         self.session.commit()
         logger.info(f"Updated job application {job_application_id} status to {status}")
 
+    @log_function_call(logger)
     def record_response(
         self,
         job_application_id: int,
@@ -502,6 +506,8 @@ class ApplicationTracker:
             "follow_ups_sent": follow_ups,
         }
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def get_application_timeline(self, application_id: int) -> List[Dict]:
         """
         Get timeline of events for an application.
@@ -513,11 +519,11 @@ class ApplicationTracker:
             List of timeline events
 
         Raises:
-            ValueError: If application not found
+            NotFoundError: If application not found
         """
         app = self.session.query(JobApplication).get(application_id)
         if not app:
-            raise ValueError(f"Application {application_id} not found")
+            raise NotFoundError(f"Application {application_id} not found")
 
         events = []
 

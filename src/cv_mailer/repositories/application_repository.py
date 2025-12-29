@@ -2,12 +2,17 @@
 Repository for job application data access.
 """
 
+import logging
 from typing import List, Optional, Tuple, Literal
 from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_, desc, asc
 
 from cv_mailer.core import JobApplication, JobStatus, EmailRecord
+from cv_mailer.utils.query_builder import QueryBuilder
+from cv_mailer.utils.logging_utils import log_function_call, log_execution_time
+
+logger = logging.getLogger(__name__)
 
 
 class ApplicationRepository:
@@ -16,6 +21,7 @@ class ApplicationRepository:
     def __init__(self, session: Session):
         self.session = session
 
+    @log_function_call(logger)
     def find_by_id(self, application_id: int) -> Optional[JobApplication]:
         """
         Find application by ID with relationships loaded.
@@ -33,6 +39,8 @@ class ApplicationRepository:
             .first()
         )
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def find_all(
         self,
         status: Optional[JobStatus] = None,
@@ -84,34 +92,28 @@ class ApplicationRepository:
         if date_to:
             query = query.filter(JobApplication.updated_at <= date_to)
 
-        # Apply sorting
-        if sort_by:
-            if sort_by == "created_at":
-                column = JobApplication.created_at
-            elif sort_by == "updated_at":
-                column = JobApplication.updated_at
-            elif sort_by == "status":
-                column = JobApplication.status
-            else:
-                column = JobApplication.updated_at  # Default fallback
+        # Apply sorting and pagination using query builder
+        sortable_fields = {
+            "created_at": JobApplication.created_at,
+            "updated_at": JobApplication.updated_at,
+            "status": JobApplication.status,
+        }
 
-            # Default order: desc for updated_at, asc for others
-            if order is None:
-                order = "desc" if sort_by == "updated_at" else "asc"
-
-            if order == "desc":
-                query = query.order_by(desc(column))
-            else:
-                query = query.order_by(asc(column))
-        else:
-            # Default: sort by updated_at descending
-            query = query.order_by(desc(JobApplication.updated_at))
-
-        total = query.count()
-        applications = query.offset(offset).limit(limit).all()
+        applications, total = (
+            QueryBuilder(query)
+            .apply_sorting(
+                sort_by=sort_by,
+                order=order,
+                default_sort="updated_at",
+                default_order="desc",
+                sortable_fields=sortable_fields,
+            )
+            .apply_pagination(limit=limit, offset=offset)
+        )
 
         return applications, total
 
+    @log_function_call(logger)
     def search(
         self,
         search_term: str,
@@ -138,31 +140,24 @@ class ApplicationRepository:
             or_(JobApplication.company_name.ilike(pattern), JobApplication.position.ilike(pattern))
         )
 
-        # Apply sorting
-        if sort_by:
-            if sort_by == "created_at":
-                column = JobApplication.created_at
-            elif sort_by == "updated_at":
-                column = JobApplication.updated_at
-            elif sort_by == "status":
-                column = JobApplication.status
-            else:
-                column = JobApplication.updated_at  # Default fallback
+        # Apply sorting and pagination using query builder
+        sortable_fields = {
+            "created_at": JobApplication.created_at,
+            "updated_at": JobApplication.updated_at,
+            "status": JobApplication.status,
+        }
 
-            # Default order: desc for updated_at, asc for others
-            if order is None:
-                order = "desc" if sort_by == "updated_at" else "asc"
-
-            if order == "desc":
-                query = query.order_by(desc(column))
-            else:
-                query = query.order_by(asc(column))
-        else:
-            # Default: sort by updated_at descending
-            query = query.order_by(desc(JobApplication.updated_at))
-
-        total = query.count()
-        applications = query.offset(offset).limit(limit).all()
+        applications, total = (
+            QueryBuilder(query)
+            .apply_sorting(
+                sort_by=sort_by,
+                order=order,
+                default_sort="updated_at",
+                default_order="desc",
+                sortable_fields=sortable_fields,
+            )
+            .apply_pagination(limit=limit, offset=offset)
+        )
 
         return applications, total
 

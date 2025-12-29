@@ -9,7 +9,14 @@ import logging
 from typing import Dict
 
 from cv_mailer.core import JobApplication, EmailRecord, JobStatus, EmailStatus, StatusHistory
+from cv_mailer.core.status_constants import (
+    INTERVIEW_STAGE_STATUSES,
+    OFFER_STAGE_STATUSES,
+    REACHED_OUT_STATUSES,
+    TERMINAL_STATUSES,
+)
 from cv_mailer.utils import get_session
+from cv_mailer.utils.logging_utils import log_function_call, log_execution_time
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +34,8 @@ class StatisticsService:
         self.session = session or get_session()
         self._owns_session = session is None
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def get_statistics(self) -> Dict:
         """
         Get comprehensive application statistics.
@@ -103,47 +112,21 @@ class StatisticsService:
 
         # Calculate applications that reached interview stages
         # This includes:
-        # 1. Applications currently in interview stages (interview_scheduled, interview_in_progress, result_awaited)
+        # 1. Applications currently in interview stages
         # 2. Applications that reached offer_received or accepted (they definitely had interviews)
         # 3. Applications that are rejected/ghosted BUT have history showing they reached interview_scheduled or beyond
-        interview_stage_statuses = [
-            JobStatus.INTERVIEW_SCHEDULED,
-            JobStatus.INTERVIEW_IN_PROGRESS,
-            JobStatus.RESULT_AWAITED,
-            JobStatus.OFFER_RECEIVED,
-            JobStatus.ACCEPTED,
-        ]
-
         # Count applications currently in interview stages or beyond
         # Also include offer_rejected since they definitely had interviews (got an offer)
         apps_in_interview_stages = sum(
-            by_status.get(status.value, 0) for status in interview_stage_statuses
+            by_status.get(status.value, 0) for status in INTERVIEW_STAGE_STATUSES
         ) + by_status.get(JobStatus.OFFER_REJECTED.value, 0)
 
         # Count rejected/ghosted/withdrawn applications that reached interviews (check status_history)
         terminal_with_interviews = (
             self.session.query(StatusHistory.job_application_id)
             .join(JobApplication, StatusHistory.job_application_id == JobApplication.id)
-            .filter(
-                JobApplication.status.in_(
-                    [
-                        JobStatus.REJECTED,
-                        JobStatus.GHOSTED,
-                        JobStatus.WITHDRAWN,
-                        JobStatus.OFFER_REJECTED,
-                    ]
-                )
-            )
-            .filter(
-                StatusHistory.to_status.in_(
-                    [
-                        JobStatus.INTERVIEW_SCHEDULED,
-                        JobStatus.INTERVIEW_IN_PROGRESS,
-                        JobStatus.RESULT_AWAITED,
-                        JobStatus.OFFER_RECEIVED,
-                    ]
-                )
-            )
+            .filter(JobApplication.status.in_(TERMINAL_STATUSES))
+            .filter(StatusHistory.to_status.in_(INTERVIEW_STAGE_STATUSES))
             .distinct()
             .count()
         )
@@ -152,19 +135,9 @@ class StatisticsService:
 
         # Applications that reached out (reached_out or beyond)
         # This counts all applications that have progressed beyond "applied" status
-        reached_out_statuses = [
-            JobStatus.REACHED_OUT,
-            JobStatus.INTERVIEW_SCHEDULED,
-            JobStatus.INTERVIEW_IN_PROGRESS,
-            JobStatus.RESULT_AWAITED,
-            JobStatus.OFFER_RECEIVED,
-            JobStatus.ACCEPTED,
-            JobStatus.REJECTED,
-            JobStatus.GHOSTED,
-            JobStatus.WITHDRAWN,
-            JobStatus.OFFER_REJECTED,
-        ]
-        total_reached_out = sum(by_status.get(status.value, 0) for status in reached_out_statuses)
+        total_reached_out = sum(
+            by_status.get(status.value, 0) for status in REACHED_OUT_STATUSES
+        )
 
         # Total applications applied = all applications (since all are imported as "applied")
         total_applications_applied = total_apps
@@ -181,16 +154,7 @@ class StatisticsService:
             self.session.query(StatusHistory.job_application_id)
             .join(JobApplication, StatusHistory.job_application_id == JobApplication.id)
             .filter(JobApplication.status == JobStatus.REJECTED)
-            .filter(
-                StatusHistory.to_status.in_(
-                    [
-                        JobStatus.INTERVIEW_SCHEDULED,
-                        JobStatus.INTERVIEW_IN_PROGRESS,
-                        JobStatus.RESULT_AWAITED,
-                        JobStatus.OFFER_RECEIVED,
-                    ]
-                )
-            )
+            .filter(StatusHistory.to_status.in_(INTERVIEW_STAGE_STATUSES))
             .distinct()
             .count()
         )
@@ -248,28 +212,15 @@ class StatisticsService:
         # 1. Applications currently in offer_received or accepted
         # 2. Applications that are offer_rejected (they definitely got an offer)
         # 3. Applications that are rejected/ghosted/withdrawn BUT have history showing they reached offer_received
-        offer_stage_statuses = [
-            JobStatus.OFFER_RECEIVED,
-            JobStatus.ACCEPTED,
-        ]
-
         apps_in_offer_stages = sum(
-            by_status.get(status.value, 0) for status in offer_stage_statuses
+            by_status.get(status.value, 0) for status in OFFER_STAGE_STATUSES
         ) + by_status.get(JobStatus.OFFER_REJECTED.value, 0)
 
         # Count terminal applications that reached offer_received (check status_history)
         terminal_with_offer = (
             self.session.query(StatusHistory.job_application_id)
             .join(JobApplication, StatusHistory.job_application_id == JobApplication.id)
-            .filter(
-                JobApplication.status.in_(
-                    [
-                        JobStatus.REJECTED,
-                        JobStatus.GHOSTED,
-                        JobStatus.WITHDRAWN,
-                    ]
-                )
-            )
+            .filter(JobApplication.status.in_(TERMINAL_STATUSES))
             .filter(StatusHistory.to_status == JobStatus.OFFER_RECEIVED)
             .distinct()
             .count()
@@ -291,6 +242,7 @@ class StatisticsService:
             "interview_breakdown": interview_breakdown,
         }
 
+    @log_function_call(logger)
     def get_summary(self) -> Dict:
         """
         Get summary statistics.

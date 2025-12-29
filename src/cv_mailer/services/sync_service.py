@@ -12,6 +12,8 @@ from cv_mailer.services.tracker import ApplicationTracker
 from cv_mailer.services.email_service import EmailService
 from cv_mailer.core import JobApplication, EmailRecord, EmailStatus, EmailType
 from cv_mailer.parsers import RecruiterParser
+from cv_mailer.utils.sheet_parser import extract_application_data
+from cv_mailer.utils.logging_utils import log_function_call, log_execution_time
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,8 @@ class SyncService:
 
         self.email_service = EmailService(gmail_sender=GmailSender(), tracker=self.tracker)
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def sync_applications(self, dry_run: bool = False) -> Dict[str, Any]:
         """
         Sync job applications from Google Sheets.
@@ -59,8 +63,8 @@ class SyncService:
                 filter_str = Config.SHEET_NAME_FILTER or "none"
                 logger.info(f"Processing all sheets (filter: {filter_str})")
             else:
-                rows = self.sheets_client.read_all_rows()
                 sheet_name = Config.WORKSHEET_NAME
+                rows = self.sheets_client.read_all_rows(worksheet_name=sheet_name)
                 logger.info(f"Processing single sheet: {sheet_name}")
 
             if not rows:
@@ -80,47 +84,15 @@ class SyncService:
 
             for row in rows:
                 try:
-                    # Extract data from sheet
-                    company_name = (
-                        row.get("Company Name")
-                        or row.get("company_name")
-                        or row.get("Company")
-                        or row.get("company")
-                        or ""
-                    )
-                    position = row.get("Position") or row.get("position") or ""
-                    recruiter_cell = (
-                        row.get("Recruiter Names")
-                        or row.get("recruiter_names")
-                        or row.get("Recruiter Name")
-                        or row.get("recruiter_name")
-                        or row.get("Recruiter Email")
-                        or row.get("recruiter_email")
-                        or ""
-                    )
-                    location = row.get("Location") or row.get("location") or None
-                    job_posting_url = (
-                        row.get("Job Posting URL")
-                        or row.get("job_posting_url")
-                        or row.get("Job Posting")
-                        or row.get("job_posting")
-                        or None
-                    )
-                    expected_salary = (
-                        row.get("Expected salary")
-                        or row.get("expected_salary")
-                        or row.get("Expected Salary")
-                        or row.get("Salary")
-                        or row.get("salary")
-                        or None
-                    )
-                    custom_message = (
-                        row.get("Message")
-                        or row.get("message")
-                        or row.get("Custom Message")
-                        or row.get("custom_message")
-                        or None
-                    )
+                    # Extract data from sheet using utility function
+                    row_data = extract_application_data(row)
+                    company_name = row_data["company_name"]
+                    position = row_data["position"]
+                    recruiter_cell = row_data["recruiter_cell"]
+                    location = row_data["location"]
+                    job_posting_url = row_data["job_posting_url"]
+                    expected_salary = row_data["expected_salary"]
+                    custom_message = row_data["custom_message"]
 
                     recruiters = RecruiterParser.parse_recruiters(recruiter_cell)
 
@@ -249,6 +221,8 @@ class SyncService:
             logger.error(f"Error syncing applications: {e}", exc_info=True)
             raise
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def send_follow_ups(self, dry_run: bool = False) -> Dict[str, Any]:
         """
         Send follow-up emails for applications that need them.

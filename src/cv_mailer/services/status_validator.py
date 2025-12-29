@@ -2,7 +2,13 @@
 Status transition validation - ensures one-directional status flow.
 """
 
+import logging
+
 from cv_mailer.core import JobStatus
+from cv_mailer.utils.exceptions import BusinessLogicError
+from cv_mailer.utils.logging_utils import log_function_call
+
+logger = logging.getLogger(__name__)
 
 
 class StatusValidator:
@@ -51,6 +57,7 @@ class StatusValidator:
     }
 
     @classmethod
+    @log_function_call(logger)
     def can_transition(cls, from_status: JobStatus, to_status: JobStatus) -> tuple[bool, str]:
         """
         Check if a status transition is valid.
@@ -89,18 +96,19 @@ class StatusValidator:
         return True, "OK"
 
     @classmethod
+    @log_function_call(logger)
     def validate_transition(cls, from_status: JobStatus, to_status: JobStatus):
         """
-        Validate status transition, raising ValueError if invalid.
+        Validate status transition, raising BusinessLogicError if invalid.
 
         Args:
             from_status: Current status
             to_status: Desired new status
 
         Raises:
-            ValueError: If transition is not allowed
+            BusinessLogicError: If transition is not allowed
         """
         is_valid, reason = cls.can_transition(from_status, to_status)
         if not is_valid:
-            raise ValueError(reason)
+            raise BusinessLogicError(reason)
 

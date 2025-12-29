@@ -10,6 +10,11 @@ from cv_mailer.integrations import GmailSender
 from cv_mailer.services.template_service import EmailTemplate
 from cv_mailer.services.tracker import ApplicationTracker
 from cv_mailer.core import JobApplication, EmailType, EmailStatus, JobStatus
+from cv_mailer.utils.exceptions import (
+    NotFoundError,
+    BusinessLogicError,
+)
+from cv_mailer.utils.logging_utils import log_function_call, log_execution_time
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +37,7 @@ class EmailService:
         self.gmail_sender = gmail_sender or GmailSender()
         self.tracker = tracker or ApplicationTracker()
 
+    @log_function_call(logger)
     def send_first_contact(
         self, application_id: int, recruiter_id: Optional[int] = None, dry_run: bool = False
     ) -> Dict[str, int]:
@@ -47,14 +53,15 @@ class EmailService:
             Dictionary with sent_count and failed_count
 
         Raises:
-            ValueError: If application not found or no recruiters
+            NotFoundError: If application not found or no recruiters
+            ExternalServiceError: If email sending fails
         """
         app = self.tracker.session.query(JobApplication).get(application_id)
         if not app:
-            raise ValueError(f"Application {application_id} not found")
+            raise NotFoundError(f"Application {application_id} not found")
 
         if not app.recruiters:
-            raise ValueError(f"No recruiters found for application {application_id}")
+            raise NotFoundError(f"No recruiters found for application {application_id}")
 
         logger.info(f"Sending first contact for application {application_id}")
 
@@ -65,7 +72,7 @@ class EmailService:
         if recruiter_id:
             recruiters_to_email = [r for r in app.recruiters if r.id == recruiter_id]
             if not recruiters_to_email:
-                raise ValueError(
+                raise NotFoundError(
                     f"Recruiter {recruiter_id} not found for application {application_id}"
                 )
 
@@ -147,6 +154,7 @@ class EmailService:
 
         return {"sent_count": sent_count, "failed_count": failed_count}
 
+    @log_function_call(logger)
     def send_follow_up(
         self, application_id: int, recruiter_id: Optional[int] = None, dry_run: bool = False
     ) -> Dict[str, int]:
@@ -162,19 +170,21 @@ class EmailService:
             Dictionary with sent_count and failed_count
 
         Raises:
-            ValueError: If application not found, no recruiters, or timing check fails
+            NotFoundError: If application not found or no recruiters
+            BusinessLogicError: If timing check fails
+            ExternalServiceError: If email sending fails
         """
         app = self.tracker.session.query(JobApplication).get(application_id)
         if not app:
-            raise ValueError(f"Application {application_id} not found")
+            raise NotFoundError(f"Application {application_id} not found")
 
         if not app.recruiters:
-            raise ValueError(f"No recruiters found for application {application_id}")
+            raise NotFoundError(f"No recruiters found for application {application_id}")
 
         # Check if follow-up is allowed (timing and status checks)
         can_send, reason = self.tracker.can_send_follow_up(application_id)
         if not can_send:
-            raise ValueError(f"Cannot send follow-up: {reason}")
+            raise BusinessLogicError(f"Cannot send follow-up: {reason}")
 
         logger.info(f"Sending follow-up for application {application_id}")
 
@@ -185,7 +195,7 @@ class EmailService:
         if recruiter_id:
             recruiters_to_email = [r for r in app.recruiters if r.id == recruiter_id]
             if not recruiters_to_email:
-                raise ValueError(
+                raise NotFoundError(
                     f"Recruiter {recruiter_id} not found for application {application_id}"
                 )
 
@@ -266,6 +276,7 @@ class EmailService:
 
         return {"sent_count": sent_count, "failed_count": failed_count}
 
+    @log_function_call(logger)
     def get_emails_for_application(self, application_id: int):
         """Get all emails for an application."""
         from cv_mailer.core import EmailRecord
@@ -277,6 +288,7 @@ class EmailService:
             .all()
         )
 
+    @log_function_call(logger)
     def list_emails(self, status=None, limit=50, offset=0):
         """List emails with filtering."""
         from cv_mailer.core import EmailRecord

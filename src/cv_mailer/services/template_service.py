@@ -7,6 +7,7 @@ from jinja2 import Template
 from typing import Optional
 
 from cv_mailer.config import Config
+from cv_mailer.utils.logging_utils import log_function_call
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,7 @@ class EmailTemplateService:
     """
 
     @classmethod
+    @log_function_call(logger)
     def render_first_contact(
         cls,
         recruiter_name: Optional[str],
@@ -147,6 +149,7 @@ class EmailTemplateService:
         return subject, body
 
     @classmethod
+    @log_function_call(logger)
     def render_follow_up(
         cls,
         recruiter_name: Optional[str],

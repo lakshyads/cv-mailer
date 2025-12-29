@@ -19,7 +19,8 @@ from sqlalchemy.exc import OperationalError
 
 from cv_mailer.config import Config
 from cv_mailer.core import DailyEmailStats
-from cv_mailer.utils import get_session
+from cv_mailer.utils import get_session, ExternalServiceError
+from cv_mailer.utils.logging_utils import log_function_call, log_execution_time
 from cv_mailer.integrations.gmail.auth import GmailAuthenticator
 
 logger = logging.getLogger(__name__)
@@ -32,10 +33,12 @@ class GmailSender:
         self.service = None
         self._authenticate()
 
+    @log_function_call(logger)
     def _authenticate(self):
         """Authenticate with Gmail API."""
         self.service = GmailAuthenticator.authenticate()
 
+    @log_function_call(logger)
     def _check_rate_limit(self, max_retries: int = 3) -> bool:
         """
         Check if we can send an email based on daily email limits.
@@ -45,9 +48,9 @@ class GmailSender:
             session = get_session()
             try:
                 today = datetime.now(timezone.utc).date()
-                today_start = datetime.combine(
-                    today, datetime.min.time()
-                ).replace(tzinfo=timezone.utc)
+                today_start = datetime.combine(today, datetime.min.time()).replace(
+                    tzinfo=timezone.utc
+                )
 
                 # Get today's stats
                 stats = (
@@ -65,9 +68,9 @@ class GmailSender:
                 else:
                     # Create new stats record (don't commit yet, just prepare)
                     # Set date to start of today in UTC
-                    today_start_utc = datetime.combine(
-                        today, datetime.min.time()
-                    ).replace(tzinfo=timezone.utc)
+                    today_start_utc = datetime.combine(today, datetime.min.time()).replace(
+                        tzinfo=timezone.utc
+                    )
                     stats = DailyEmailStats(date=today_start_utc, emails_sent=0)
                     session.add(stats)
                     session.flush()  # Flush to get ID but don't commit yet
@@ -94,15 +97,16 @@ class GmailSender:
         # If all retries failed, allow sending to avoid blocking
         return True
 
+    @log_function_call(logger)
     def _update_rate_limit_stats(self, max_retries: int = 5):
         """Update daily email statistics after sending with retry logic."""
         for attempt in range(max_retries):
             session = get_session()
             try:
                 today = datetime.now(timezone.utc).date()
-                today_start = datetime.combine(
-                    today, datetime.min.time()
-                ).replace(tzinfo=timezone.utc)
+                today_start = datetime.combine(today, datetime.min.time()).replace(
+                    tzinfo=timezone.utc
+                )
 
                 stats = (
                     session.query(DailyEmailStats)
@@ -112,9 +116,9 @@ class GmailSender:
 
                 if not stats:
                     # Set date to start of today in UTC
-                    today_start_utc = datetime.combine(
-                        today, datetime.min.time()
-                    ).replace(tzinfo=timezone.utc)
+                    today_start_utc = datetime.combine(today, datetime.min.time()).replace(
+                        tzinfo=timezone.utc
+                    )
                     stats = DailyEmailStats(date=today_start_utc, emails_sent=0)
                     session.add(stats)
 
@@ -151,6 +155,7 @@ class GmailSender:
             finally:
                 session.close()
 
+    @log_function_call(logger)
     def _create_message(
         self,
         to: str,
@@ -204,6 +209,8 @@ class GmailSender:
         raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
         return {"raw": raw_message}
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def send_email(
         self,
         to: str,
@@ -258,7 +265,7 @@ class GmailSender:
 
         except HttpError as error:
             logger.error(f"Error sending email: {error}")
-            return None
+            raise ExternalServiceError(f"Gmail API error: {error}")
         except Exception as e:
             logger.error(f"Unexpected error sending email: {e}")
-            return None
+            raise ExternalServiceError(f"Failed to send email: {e}")

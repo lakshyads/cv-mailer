@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 from cv_mailer.config import Config
+from cv_mailer.utils.logging_utils import log_function_call
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class GmailAuthenticator:
     TOKEN_FILE = "gmail_token.pickle"
 
     @classmethod
+    @log_function_call(logger)
     def authenticate(cls):
         """
         Authenticate with Gmail API and return service object.

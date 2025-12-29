@@ -2,12 +2,16 @@
 Repository for recruiter data access.
 """
 
+import logging
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 
 from cv_mailer.core import Recruiter, JobApplication
 from cv_mailer.core.models import job_application_recruiter
+from cv_mailer.utils.logging_utils import log_function_call
+
+logger = logging.getLogger(__name__)
 
 
 class RecruiterRepository:
@@ -16,6 +20,7 @@ class RecruiterRepository:
     def __init__(self, session: Session):
         self.session = session
     
+    @log_function_call(logger)
     def find_by_id(self, recruiter_id: int) -> Optional[Recruiter]:
         """
         Find recruiter by ID with applications loaded.
@@ -33,6 +38,7 @@ class RecruiterRepository:
             .first()
         )
     
+    @log_function_call(logger)
     def find_all(
         self,
         limit: int = 100,

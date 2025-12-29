@@ -12,6 +12,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 from cv_mailer.config import Config
+from cv_mailer.utils.logging_utils import log_function_call
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class SheetsAuthenticator:
     TOKEN_FILE = "token.pickle"
 
     @classmethod
+    @log_function_call(logger)
     def authenticate(cls):
         """
         Authenticate with Google Sheets API and return service object.

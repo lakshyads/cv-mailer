@@ -6,12 +6,22 @@ Both CLI and API use this service.
 """
 
 import logging
-from typing import List, Optional, Tuple
-from datetime import datetime, timezone, timedelta
+from typing import List, Optional, Tuple, Literal
+from datetime import datetime, timezone
 
-from cv_mailer.core import JobApplication, JobStatus, EmailRecord, StatusHistory
+from cv_mailer.core import JobApplication, JobStatus, StatusHistory
+from cv_mailer.core.status_constants import (
+    MAIN_FLOW_STATUSES,
+    TERMINAL_STATUSES,
+    STATUSES_THAT_CLOSE_APPLICATION,
+)
 from cv_mailer.repositories import ApplicationRepository
-from cv_mailer.utils import get_session
+from cv_mailer.utils import (
+    get_session,
+    NotFoundError,
+    BusinessLogicError,
+)
+from cv_mailer.utils.logging_utils import log_function_call, log_execution_time
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +43,7 @@ class ApplicationService:
             self.repository = ApplicationRepository(session)
             self._owns_session = True
 
+    @log_function_call(logger)
     def get_application(self, application_id: int) -> Optional[JobApplication]:
         """
         Get application by ID.
@@ -44,13 +55,15 @@ class ApplicationService:
             JobApplication or None
 
         Raises:
-            ValueError: If application not found
+            NotFoundError: If application not found
         """
         app = self.repository.find_by_id(application_id)
         if not app:
-            raise ValueError(f"Application {application_id} not found")
+            raise NotFoundError(f"Application {application_id} not found")
         return app
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def list_applications(
         self,
         status: Optional[JobStatus] = None,
@@ -60,8 +73,8 @@ class ApplicationService:
         date_to: Optional[datetime] = None,
         limit: int = 50,
         offset: int = 0,
-        sort_by: Optional[str] = None,
-        order: Optional[str] = None,
+        sort_by: Optional[Literal["created_at", "updated_at", "status"]] = None,
+        order: Optional[Literal["asc", "desc"]] = None,
     ) -> Tuple[List[JobApplication], int]:
         """
         List applications with filtering, searching, pagination, and sorting.
@@ -86,19 +99,20 @@ class ApplicationService:
             search_term=search,
             date_from=date_from,
             date_to=date_to,
-            limit=limit, 
+            limit=limit,
             offset=offset,
             sort_by=sort_by,
-            order=order
+            order=order,
         )
 
+    @log_function_call(logger)
     def search_applications(
         self,
         query: str,
         limit: int = 50,
         offset: int = 0,
-        sort_by: Optional[str] = None,
-        order: Optional[str] = None,
+        sort_by: Optional[Literal["created_at", "updated_at", "status"]] = None,
+        order: Optional[Literal["asc", "desc"]] = None,
     ) -> Tuple[List[JobApplication], int]:
         """
         Search applications by company name or position with optional sorting.
@@ -114,13 +128,10 @@ class ApplicationService:
             Tuple of (applications, total_count)
         """
         return self.repository.search(
-            search_term=query, 
-            limit=limit, 
-            offset=offset,
-            sort_by=sort_by,
-            order=order
+            search_term=query, limit=limit, offset=offset, sort_by=sort_by, order=order
         )
 
+    @log_function_call(logger)
     def update_status(
         self,
         application_id: int,
@@ -139,11 +150,11 @@ class ApplicationService:
             Updated application
 
         Raises:
-            ValueError: If application not found or transition is invalid
+            NotFoundError: If application not found
+            BusinessLogicError: If transition is invalid
         """
         app = self.get_application(application_id)
-        if not app:
-            raise ValueError(f"Application {application_id} not found")
+        # get_application already raises NotFoundError if not found
 
         # Refresh to ensure we have latest status from database
         self.repository.session.refresh(app)
@@ -153,8 +164,12 @@ class ApplicationService:
         from cv_mailer.core import StatusHistory
 
         logger.info(f"Validating status transition: {app.status.value} -> {status.value}")
-        StatusValidator.validate_transition(app.status, status)
-        logger.info(f"Status transition validated successfully")
+        try:
+            StatusValidator.validate_transition(app.status, status)
+            logger.info("Status transition validated successfully")
+        except BusinessLogicError:
+            # Re-raise BusinessLogicError from StatusValidator
+            raise
 
         # Record status change in history before updating
         from_status = app.status
@@ -174,13 +189,7 @@ class ApplicationService:
             app.notes = notes
 
         # Set closed_at for terminal states
-        if status in [
-            JobStatus.REJECTED,
-            JobStatus.GHOSTED,
-            JobStatus.ACCEPTED,
-            JobStatus.WITHDRAWN,
-            JobStatus.OFFER_REJECTED,
-        ]:
+        if status in STATUSES_THAT_CLOSE_APPLICATION:
             app.closed_at = datetime.now(timezone.utc)
         elif app.closed_at:
             # Reopen if moving from terminal to non-terminal
@@ -204,24 +213,6 @@ class ApplicationService:
         Returns:
             Last main flow status, or None if not found
         """
-        # Main flow statuses in order
-        main_flow_statuses = {
-            JobStatus.APPLIED,
-            JobStatus.REACHED_OUT,
-            JobStatus.INTERVIEW_SCHEDULED,
-            JobStatus.INTERVIEW_IN_PROGRESS,
-            JobStatus.RESULT_AWAITED,
-            JobStatus.OFFER_RECEIVED,
-            JobStatus.ACCEPTED,
-        }
-
-        # Terminal states
-        terminal_states = {
-            JobStatus.REJECTED,
-            JobStatus.GHOSTED,
-            JobStatus.WITHDRAWN,
-            JobStatus.OFFER_REJECTED,
-        }
 
         # Get all status changes for this application
         status_changes = (
@@ -232,25 +223,27 @@ class ApplicationService:
         )
 
         # Find the last main flow status before terminal state
-        last_main_flow = None
+        last_main_flow: Optional[JobStatus] = None
         for status_change in status_changes:
-            if status_change.to_status in main_flow_statuses:
+            if status_change.to_status in MAIN_FLOW_STATUSES:
                 last_main_flow = status_change.to_status
-            elif status_change.to_status in terminal_states:
+            elif status_change.to_status in TERMINAL_STATUSES:
                 # Found terminal state, return the last main flow status
                 return last_main_flow
 
         # If no terminal state found in history, check current status
         app = self.get_application(application_id)
-        if app.status in terminal_states:
+        if app.status in TERMINAL_STATUSES:
             return last_main_flow
 
         # If current status is in main flow, return it
-        if app.status in main_flow_statuses:
+        if app.status in MAIN_FLOW_STATUSES:
             return app.status
 
         return None
 
+    @log_function_call(logger)
+    @log_execution_time(logger)
     def get_application_timeline(self, application_id: int) -> List[dict]:
         """
         Get timeline of events for an application.
@@ -262,7 +255,7 @@ class ApplicationService:
             List of timeline events
 
         Raises:
-            ValueError: If application not found
+            NotFoundError: If application not found
         """
         app = self.get_application(application_id)
 

@@ -7,11 +7,11 @@ All business logic is in ApplicationService.
 
 import logging
 from typing import Optional, List
-from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from cv_mailer.services import ApplicationService, EmailService
 from cv_mailer.core import JobStatus
+from cv_mailer.core.status_constants import TERMINAL_STATUSES
 from cv_mailer.api.dependencies import get_application_service, get_email_service
 from cv_mailer.api.schemas import (
     ApplicationListResponse,
@@ -21,6 +21,13 @@ from cv_mailer.api.schemas import (
     PaginatedResponse,
     TimelineEvent,
 )
+from cv_mailer.utils.date import parse_iso_datetime_optional
+from cv_mailer.utils.exceptions import (
+    NotFoundError,
+    ValidationError,
+    BusinessLogicError,
+    format_error_response,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -28,7 +35,9 @@ router = APIRouter()
 
 @router.get("/applications", response_model=PaginatedResponse[ApplicationListResponse])
 async def list_applications(
-    status: Optional[str] = Query(None, description="Filter by single status (deprecated, use statuses)"),
+    status: Optional[str] = Query(
+        None, description="Filter by single status (deprecated, use statuses)"
+    ),
     statuses: Optional[List[str]] = Query(None, description="Filter by multiple statuses"),
     q: Optional[str] = Query(None, description="Search query for company name or position"),
     date_from: Optional[str] = Query(None, description="Start date for filtering (ISO format)"),
@@ -45,19 +54,16 @@ async def list_applications(
     # Parse status filters
     job_status = None
     job_statuses = None
-    
-    if statuses and len(statuses) > 0:
-        # Multi-select: parse list of statuses
-        try:
+
+    try:
+        if statuses and len(statuses) > 0:
+            # Multi-select: parse list of statuses
             job_statuses = [JobStatus(s.lower()) for s in statuses if s]
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=f"Invalid status in list: {e}")
-    elif status:
-        # Single status (backward compatibility)
-        try:
+        elif status:
+            # Single status (backward compatibility)
             job_status = JobStatus(status.lower())
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid status: {str(e)}")
 
     # Validate sort_by
     if sort_by and sort_by not in ["created_at", "updated_at", "status"]:
@@ -72,29 +78,12 @@ async def list_applications(
             status_code=400, detail=f"Invalid order: {order}. Must be one of: asc, desc"
         )
 
-    # Parse date filters and normalize to UTC
-    date_from_dt = None
-    date_to_dt = None
-    if date_from:
-        try:
-            dt = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
-            # Normalize to UTC if timezone-aware, otherwise assume UTC
-            if dt.tzinfo is None:
-                date_from_dt = dt.replace(tzinfo=timezone.utc)
-            else:
-                date_from_dt = dt.astimezone(timezone.utc)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid date_from format: {date_from}")
-    if date_to:
-        try:
-            dt = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
-            # Normalize to UTC if timezone-aware, otherwise assume UTC
-            if dt.tzinfo is None:
-                date_to_dt = dt.replace(tzinfo=timezone.utc)
-            else:
-                date_to_dt = dt.astimezone(timezone.utc)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid date_to format: {date_to}")
+    # Parse date filters using utility function
+    try:
+        date_from_dt = parse_iso_datetime_optional(date_from)
+        date_to_dt = parse_iso_datetime_optional(date_to)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     applications, total = service.list_applications(
         status=job_status,
@@ -105,7 +94,7 @@ async def list_applications(
         limit=limit,
         offset=offset,
         sort_by=sort_by,
-        order=order
+        order=order,
     )
 
     # Build response with last main flow status for terminal states
@@ -115,12 +104,7 @@ async def list_applications(
         # Get emails count
         response.emails_count = service.get_emails_count(app.id)
         # Get last main flow status for terminal states
-        if app.status in [
-            JobStatus.REJECTED,
-            JobStatus.GHOSTED,
-            JobStatus.WITHDRAWN,
-            JobStatus.OFFER_REJECTED,
-        ]:
+        if app.status in TERMINAL_STATUSES:
             response.last_main_flow_status = service.get_last_main_flow_status(app.id)
         items.append(response)
 
@@ -156,8 +140,11 @@ async def get_application(
             response.last_main_flow_status = service.get_last_main_flow_status(application_id)
 
         return response
-    except ValueError as e:
+    except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting application {application_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.put("/applications/{application_id}/status")
@@ -171,17 +158,13 @@ async def update_application_status(
         service.update_status(application_id, request.status, request.notes)
         logger.info(f"API: Updated application {application_id} status to {request.status.value}")
         return {"message": "Status updated successfully"}
-    except ValueError as e:
-        # ValueError can be from validation (400) or not found (404)
-        error_msg = str(e)
-        if "not found" in error_msg.lower():
-            raise HTTPException(status_code=404, detail=error_msg)
-        else:
-            # Status transition validation error
-            raise HTTPException(status_code=400, detail=error_msg)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except BusinessLogicError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"API: Error updating status: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/applications/{application_id}/trigger-reach-out", response_model=EmailActionResponse)
@@ -205,12 +188,15 @@ async def trigger_reach_out(
             sent_count=result["sent_count"],
             failed_count=result["failed_count"],
         )
-    except ValueError as e:
+    except NotFoundError as e:
         logger.warning(f"API: Invalid request for reach-out: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except BusinessLogicError as e:
+        logger.warning(f"API: Business logic error for reach-out: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"API: Error triggering reach-out: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/applications/{application_id}/trigger-follow-up", response_model=EmailActionResponse)
@@ -238,12 +224,15 @@ async def trigger_follow_up(
             sent_count=result["sent_count"],
             failed_count=result["failed_count"],
         )
-    except ValueError as e:
+    except NotFoundError as e:
         logger.warning(f"API: Invalid request for follow-up: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except BusinessLogicError as e:
+        logger.warning(f"API: Business logic error for follow-up: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"API: Error triggering follow-up: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/applications/{application_id}/timeline")
@@ -259,9 +248,9 @@ async def get_application_timeline(
         timeline_events = [TimelineEvent(**event) for event in events]
 
         return {"application_id": application_id, "events": timeline_events}
-    except ValueError as e:
+    except NotFoundError as e:
         logger.warning(f"API: Invalid request for timeline: {e}")
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"API: Error getting timeline: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")

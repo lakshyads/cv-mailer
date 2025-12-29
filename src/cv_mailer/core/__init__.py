@@ -13,6 +13,14 @@ from cv_mailer.core.models import (
     StatusHistory,
     job_application_recruiter,
 )
+from cv_mailer.core.status_constants import (
+    MAIN_FLOW_STATUSES,
+    TERMINAL_STATUSES,
+    STATUSES_THAT_CLOSE_APPLICATION,
+    INTERVIEW_STAGE_STATUSES,
+    OFFER_STAGE_STATUSES,
+    REACHED_OUT_STATUSES,
+)
 
 __all__ = [
     "JobStatus",
@@ -26,4 +34,11 @@ __all__ = [
     "DailyEmailStats",
     "StatusHistory",
     "job_application_recruiter",
+    # Status constants
+    "MAIN_FLOW_STATUSES",
+    "TERMINAL_STATUSES",
+    "STATUSES_THAT_CLOSE_APPLICATION",
+    "INTERVIEW_STAGE_STATUSES",
+    "OFFER_STAGE_STATUSES",
+    "REACHED_OUT_STATUSES",
 ]

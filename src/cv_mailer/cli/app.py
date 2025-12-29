@@ -12,6 +12,7 @@ from cv_mailer.services import ApplicationService, EmailService, StatisticsServi
 from cv_mailer.services.tracker import ApplicationTracker
 from cv_mailer.core import JobStatus
 from cv_mailer.utils import init_database
+from cv_mailer.utils.exceptions import NotFoundError, BusinessLogicError, ExternalServiceError
 from cv_mailer.cli.display import console, show_progress, show_statistics
 
 logger = logging.getLogger(__name__)
@@ -66,9 +67,13 @@ class CVMailer:
             console.print()
 
             return result["sent_count"]
-        except Exception as e:
+        except (NotFoundError, BusinessLogicError, ExternalServiceError) as e:
             logger.error(f"Error processing applications: {e}", exc_info=True)
             console.print(f"[red]Error: {e}[/red]\n")
+            return 0
+        except Exception as e:
+            logger.error(f"Unexpected error processing applications: {e}", exc_info=True)
+            console.print(f"[red]Unexpected error: {e}[/red]\n")
             return 0
 
     def send_follow_ups(self, dry_run: bool = False) -> int:
@@ -95,9 +100,13 @@ class CVMailer:
             console.print()
 
             return result["sent_count"]
-        except Exception as e:
+        except (NotFoundError, BusinessLogicError, ExternalServiceError) as e:
             logger.error(f"Error sending follow-ups: {e}", exc_info=True)
             console.print(f"[red]Error: {e}[/red]\n")
+            return 0
+        except Exception as e:
+            logger.error(f"Unexpected error sending follow-ups: {e}", exc_info=True)
+            console.print(f"[red]Unexpected error: {e}[/red]\n")
             return 0
 
     def show_statistics(self):
@@ -111,7 +120,12 @@ class CVMailer:
             job_status = JobStatus(status.lower())
             self.app_service.update_status(job_id, job_status, notes)
             console.print(f"[green]✓[/green] Updated job {job_id} status to {status}")
-        except ValueError as e:
-            console.print(f"[red]Invalid: {e}[/red]")
-        except Exception as e:
+        except (NotFoundError, BusinessLogicError) as e:
+            logger.error(f"Error updating status: {e}")
             console.print(f"[red]Error: {e}[/red]")
+        except ValueError as e:
+            logger.error(f"Invalid status: {e}")
+            console.print(f"[red]Invalid status: {e}[/red]")
+        except Exception as e:
+            logger.error(f"Unexpected error updating status: {e}", exc_info=True)
+            console.print(f"[red]Unexpected error: {e}[/red]")
