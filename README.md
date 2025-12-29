@@ -15,17 +15,18 @@ cv-mailer                     # Start sending emails
 
 ## ✨ Features
 
-- 🌐 **Web Dashboard** - Modern React UI for managing applications (NEW!)
+See [Changelog](docs/CHANGELOG.md) for complete feature list and recent improvements.
+
+**Key Features:**
+
+- 🌐 **Web Dashboard** - Modern React UI for managing applications
 - 📊 **Google Sheets Integration** - Read job applications from spreadsheets
 - 📧 **Gmail Integration** - Send emails with built-in rate limiting
 - 🔄 **Follow-up Management** - Automatic follow-ups based on your schedule
-- 📈 **Comprehensive Tracking** - Track all communications and status updates
-- 🎯 **Status Management**: Track applications through the entire lifecycle
-- 📝 **Email Templates**: Professional email templates for first contact and follow-ups
-- 👥 **Multi-Recruiter Support** - Contact multiple recruiters per job
-- 📑 **Multi-Sheet Support** - Organize applications across multiple sheets
 - 🚀 **REST API** - FastAPI-based API with OpenAPI docs
-- 📦 **Modern Package** - Proper Python packaging with pip installation
+- ⚡ **Production-Ready** - Enterprise-grade architecture and code quality
+
+**For complete feature details:** See [Changelog](docs/CHANGELOG.md) | [Roadmap](docs/design/FEATURE_SUGGESTIONS.md)
 
 ## 📚 Documentation
 
@@ -59,82 +60,28 @@ Database (SQLite with indexes)
 Both CLI and API use the same service methods → No duplication, always in sync.
 
 📖 **Architecture Docs:**
-- **[Proper Architecture](PROPER_ARCHITECTURE.md)** ⭐ Complete architecture guide
-- **[Architecture Summary](FINAL_ARCHITECTURE_SUMMARY.md)** Quick overview
-- **[Design Details](docs/design/ARCHITECTURE.md)** Technical details
+
+- **[Architecture Guide](docs/design/ARCHITECTURE.md)** ⭐ Complete architecture documentation
 
 ## 📦 Installation
 
-### Quick Install (Recommended)
-
-```bash
-./setup.sh
-```
-
-### Manual Install
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -e ".[api]"
-```
-
-See [Setup Guide](docs/SETUP_GUIDE.md) for complete instructions.
+See [Quick Start Guide](docs/QUICK_START.md) for 5-minute setup or [Complete Setup Guide](docs/SETUP_GUIDE.md) for detailed instructions.
 
 ## 💻 Usage
 
-### CLI Commands
+See [Command Reference](docs/COMMANDS.md) for all available commands.
 
-> Activate virtual environment first
-> `source venv/bin/activate`
+**Quick Commands:**
 
-```bash
-cv-mailer                 # Process new applications
-cv-mailer --dry-run       # Test without sending
-cv-mailer --follow-ups    # Send follow-ups only
-cv-mailer --stats         # Show statistics
-```
+- `cv-mailer` - Process new applications
+- `cv-mailer-api` - Start REST API server
+- `cd frontend && npm run dev` - Start web dashboard
 
-### API Server
-
-> Activate virtual environment first
-> `source venv/bin/activate`
-
-```bash
-cv-mailer-api             # Start REST API
-# Visit http://localhost:8000/docs for interactive docs
-```
-
-### Web Dashboard
-
-> Start the API first, then run the dashboard
-
-```bash
-# Terminal 1: Start API
-source venv/bin/activate
-cv-mailer-api
-
-# Terminal 2: Start Dashboard
-cd frontend
-npm install  # First time only
-npm run dev
-# Visit http://localhost:3000
-```
-
-See [Web Dashboard Guide](docs/WEB_DASHBOARD_GUIDE.md) for complete instructions.
+**For complete usage:** See [Command Reference](docs/COMMANDS.md) | [API Guide](docs/API_GUIDE.md) | [Web Dashboard Guide](docs/WEB_DASHBOARD_GUIDE.md)
 
 ## 🔧 Configuration
 
-Create `.env` file (copy from `.env.example`):
-
-```env
-SPREADSHEET_ID=your_spreadsheet_id
-GMAIL_USER=your_email@gmail.com
-SENDER_NAME=Your Name
-RESUME_FILE_PATH=./assets/resume.pdf
-```
-
-See [Setup Guide](docs/SETUP_GUIDE.md#step-3-configure-environment-variables) for all configuration options.
+See [Setup Guide - Configuration](docs/SETUP_GUIDE.md#step-3-configure-environment-variables) for complete configuration options.
 
 ## 🗂️ Project Structure
 
@@ -149,14 +96,7 @@ cv-mailer/
 
 ## 🐛 Troubleshooting
 
-| Issue | Solution |
-| ----- | -------- |
-| Authentication failed | See [OAuth Fix Guide](docs/OAUTH_FIX.md) |
-| Command not found | Run `pip install -e .` again |
-| Rate limit exceeded | Increase delays in `.env` |
-| Can't read Sheets | Verify `SPREADSHEET_ID` and sharing |
-
-See [Setup Guide - Troubleshooting](docs/SETUP_GUIDE.md#troubleshooting) for more help.
+See [Troubleshooting Guide](docs/TROUBLESHOOTING.md) for solutions to common issues.
 
 ## 🔐 Security
 
@@ -193,4 +133,4 @@ Developed by **Lakshya Dev Singh**
 
 ---
 
-**Version**: 1.0.0 | **Status**: Production Ready
+**Version**: 1.1.0 | **Status**: Production Ready

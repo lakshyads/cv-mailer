@@ -1,8 +1,8 @@
 # Google Sheets Template Guide
 
-Reference guide for setting up your Google Sheet with job applications.
+**Complete reference for Google Sheets format and configuration.**
 
-> 📖 **Setup**: See [Quick Start](QUICK_START.md) or [Complete Setup Guide](SETUP_GUIDE.md)
+> 📖 **Setup**: See [Quick Start](QUICK_START.md) | [Setup Guide](SETUP_GUIDE.md) | [Troubleshooting](TROUBLESHOOTING.md)
 
 ## Required Columns
 

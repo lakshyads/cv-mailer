@@ -80,24 +80,22 @@ cv-mailer
 
 ## Common Commands
 
-```bash
-cv-mailer --dry-run      # Test mode
-cv-mailer --new          # New applications only
-cv-mailer --follow-ups   # Send follow-ups only
-cv-mailer --stats        # View statistics
-cv-mailer --help         # All options
-```
+See [Command Reference](COMMANDS.md) for all available commands.
+
+**Quick Commands:**
+- `cv-mailer --dry-run` - Test mode
+- `cv-mailer --follow-ups` - Send follow-ups
+- `cv-mailer --stats` - View statistics
 
 ## Quick Troubleshooting
 
-| Problem | Quick Fix |
-|---------|----------|
-| `credentials.json not found` | Download from Google Cloud Console |
-| `Authentication failed` | Delete `token.pickle` and `gmail_token.pickle`, re-run |
-| `Cannot read Sheets` | Check `SPREADSHEET_ID` and sheet sharing |
-| `cv-mailer command not found` | Run `pip install -e .` again |
+See [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions to common issues.
 
-> 🔧 **More troubleshooting**: See [Setup Guide - Troubleshooting](SETUP_GUIDE.md#troubleshooting) or [OAuth Fix](OAUTH_FIX.md)
+**Common Issues:**
+- `credentials.json not found` → Download from Google Cloud Console
+- `Authentication failed` → Delete `token.pickle` and `gmail_token.pickle`, re-run
+- `Cannot read Sheets` → Check `SPREADSHEET_ID` and sheet sharing
+- `cv-mailer command not found` → Run `pip install -e .` again
 
 ## Next Steps
 
@@ -107,15 +105,7 @@ cv-mailer --help         # All options
 
 ## Multi-Features
 
-**Multi-Sheet**: `PROCESS_ALL_SHEETS=true` in `.env`
-
-**Multi-Recruiter**: Use format in sheet:
-
-```text
-Recruiter Names: Alice - alice@co.com, Bob - bob@co.com
-```
-
-See [Google Sheets Template](GOOGLE_SHEETS_TEMPLATE.md) for details.
+**Multi-Sheet** and **Multi-Recruiter** support: See [Google Sheets Template](GOOGLE_SHEETS_TEMPLATE.md) for complete details.
 
 ---
 

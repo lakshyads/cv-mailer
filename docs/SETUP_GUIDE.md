@@ -177,28 +177,13 @@ Copy the `SPREADSHEET_ID` part into `.env`.
 
 > 📋 **Detailed sheet format**: See [Google Sheets Template Guide](GOOGLE_SHEETS_TEMPLATE.md)
 
-### Multi-Recruiter Format
+### Multi-Recruiter and Multi-Sheet Support
 
-In `Recruiter Names` column:
+See [Google Sheets Template](GOOGLE_SHEETS_TEMPLATE.md) for complete details on:
 
-```
-Alice Johnson - alice@company.com, Bob Smith - bob@company.com
-```
-
-### Multi-Sheet Support
-
-Organize by date/category:
-
-1. Create multiple sheets (e.g., "2024-01-15", "2024-01-20")
-2. Use same column structure in all sheets
-3. Set in `.env`:
-
-   ```env
-   PROCESS_ALL_SHEETS=true
-   SHEET_NAME_FILTER=2024  # Optional: filter by pattern
-   ```
-
-Each row is tracked as `{sheet_name}_{row_number}`.
+- Multi-recruiter format
+- Multi-sheet configuration
+- Column requirements
 
 ## Step 5: First Authentication
 
@@ -272,83 +257,19 @@ cv-mailer-api
 
 ## Command Reference
 
-### CLI Commands
-
-```bash
-cv-mailer                 # Process new applications
-cv-mailer --dry-run       # Test without sending
-cv-mailer --follow-ups    # Send follow-ups only
-cv-mailer --stats         # Show statistics
-cv-mailer --new           # New applications only
-cv-mailer --repair-followups --dry-run  # Repair follow-up numbering
-cv-mailer --help          # Show all options
-```
-
-### Package Management
-
-```bash
-pip install -e .                    # Basic install
-pip install -e ".[api]"             # With API
-pip install -e ".[dev]"             # With dev tools
-pip install -e . --force-reinstall  # Reinstall
-pip uninstall cv-mailer             # Uninstall
-```
+See [Command Reference](COMMANDS.md) for complete list of all commands.
 
 ## Troubleshooting
 
-### Credentials File Not Found
+See [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions to all common issues.
 
-- Ensure `credentials.json` is in project root
-- Check filename spelling (exact match required)
+**Quick fixes:**
 
-### Authentication Failed
-
-```bash
-rm token.pickle gmail_token.pickle
-cv-mailer --dry-run  # Re-authenticate
-```
-
-> 🔧 **OAuth issues?** See [OAuth Fix Guide](OAUTH_FIX.md)
-
-### Cannot Read from Google Sheets
-
-- Verify `SPREADSHEET_ID` in `.env`
-- Ensure sheet is shared with your Google account
-- Check Google Sheets API is enabled
-- Verify worksheet name matches
-
-### Rate Limit Exceeded
-
-Edit `.env`:
-
-```env
-EMAIL_DELAY_MIN=1.0
-EMAIL_DELAY_MAX=2.0
-DAILY_EMAIL_LIMIT=20
-```
-
-Wait 24 hours before resuming.
-
-### Command Not Found
-
-```bash
-pip install -e . --force-reinstall
-# Or activate venv: source venv/bin/activate
-```
-
-### Module Not Found
-
-```bash
-pip uninstall cv-mailer
-pip install -e .
-pip show cv-mailer  # Verify installation
-```
-
-### Permission Errors
-
-- Grant all permissions during OAuth
-- Check APIs are enabled in Google Cloud Console
-- Verify OAuth consent screen scopes
+- **Credentials not found** → Download from Google Cloud Console
+- **Authentication failed** → Delete `token.pickle` and `gmail_token.pickle`, re-run
+- **Cannot read Sheets** → Verify `SPREADSHEET_ID` and sheet sharing
+- **Command not found** → Run `pip install -e .` again
+- **OAuth issues** → See [OAuth Fix Guide](fix_enhancements/OAUTH_FIX.md)
 
 ## Project Structure
 

@@ -6,6 +6,122 @@ Format: **Date - Version - Change Type: Description**
 
 ---
 
+## [1.1.0] - 2025-12-29 - PRODUCTION READINESS & OBSERVABILITY
+
+### 🎯 Production Readiness Improvements
+
+#### **Comprehensive Logging System**
+
+- **Added**: `src/cv_mailer/utils/logging_utils.py` - Centralized logging utilities
+  - `@log_function_call` decorator - Logs function entry, parameters, success, and errors
+  - `@log_execution_time` decorator - Logs execution time for performance monitoring
+- **Coverage**: 65+ functions across all layers now have logging decorators
+  - ✅ All service methods (ApplicationService, EmailService, RecruiterService, StatisticsService, SyncService, StatusValidator, TemplateService)
+  - ✅ All repository methods (ApplicationRepository, EmailRepository, RecruiterRepository)
+  - ✅ All integration methods (GmailSender, GoogleSheetsClient)
+  - ✅ All authentication methods (GmailAuthenticator, SheetsAuthenticator)
+  - ✅ Critical parser methods (RecruiterParser)
+  - ✅ ApplicationTracker methods
+- **Benefits**:
+  - ✅ Full observability of all operations
+  - ✅ Performance monitoring for slow operations
+  - ✅ Easy debugging with function call traces
+  - ✅ Production-ready logging infrastructure
+
+#### **Custom Exception System**
+
+- **Added**: `src/cv_mailer/utils/exceptions.py` - Structured exception hierarchy
+  - `CVMailerException` - Base exception class
+  - `NotFoundError` - Resource not found (404)
+  - `ValidationError` - Input validation failures (400)
+  - `BusinessLogicError` - Business rule violations (400)
+  - `ExternalServiceError` - External API failures (502)
+  - `format_error_response()` - Consistent error response formatting
+- **Impact**:
+  - ✅ Replaced generic `ValueError` with specific exception types
+  - ✅ Better error categorization and handling
+  - ✅ Consistent error responses across API
+  - ✅ Improved error messages for debugging
+
+#### **Status Constants (DRY Principle)**
+
+- **Added**: `src/cv_mailer/core/status_constants.py` - Centralized status categorization
+  - `MAIN_FLOW_STATUSES` - Progressive application states
+  - `TERMINAL_STATUSES` - Final states that cannot transition
+  - `STATUSES_THAT_CLOSE_APPLICATION` - States that set closed_at
+  - `INTERVIEW_STAGE_STATUSES` - Interview-related states
+  - `OFFER_STAGE_STATUSES` - Offer-related states
+  - `REACHED_OUT_STATUSES` - States indicating outreach
+- **Impact**:
+  - ✅ Eliminated hardcoded status lists in 6+ files
+  - ✅ Single source of truth for status categorization
+  - ✅ Easy to maintain and extend
+  - ✅ Consistent status handling across codebase
+
+#### **Input Validation Utilities**
+
+- **Added**: `src/cv_mailer/utils/validation.py` - Reusable validation functions
+  - `validate_positive_integer()` - Positive integer validation
+  - `validate_non_negative_integer()` - Non-negative integer validation
+  - `validate_string_not_empty()` - String validation
+  - `validate_limit_offset()` - Pagination parameter validation
+  - `validate_application_id()` - Application ID validation
+- **Benefits**:
+  - ✅ Consistent validation across codebase
+  - ✅ Reusable validation logic
+  - ✅ Better error messages
+  - ✅ Type-safe validation
+
+#### **Transaction Management Utilities**
+
+- **Added**: `src/cv_mailer/utils/transaction.py` - Safe transaction handling
+  - `transaction()` context manager - Automatic rollback on errors
+  - `safe_commit()` function - Safe commit with error handling
+- **Benefits**:
+  - ✅ Automatic rollback on exceptions
+  - ✅ Consistent transaction handling
+  - ✅ Better error recovery
+  - ✅ Production-ready database operations
+
+### 🏗️ Code Quality Improvements
+
+#### **Error Handling Standardization**
+
+- **Before**: Mixed use of `ValueError`, generic `Exception`, inconsistent error handling
+- **After**:
+  - ✅ All services use custom exceptions (`NotFoundError`, `BusinessLogicError`)
+  - ✅ API routers catch and convert to appropriate HTTP status codes
+  - ✅ CLI handles specific exception types with user-friendly messages
+  - ✅ Consistent error handling patterns throughout
+
+#### **Code Organization (DRY, SOLID, KISS)**
+
+- **Status Constants**: Eliminated duplication across 6+ files
+- **Logging**: Centralized logging utilities eliminate ad-hoc logging
+- **Error Handling**: Custom exceptions provide consistent error handling
+- **Validation**: Reusable validation functions eliminate duplicate checks
+- **Transaction Management**: Utilities provide consistent database handling
+
+### 📊 Metrics
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Functions with Logging | ~10 | 65+ | ⬆️ 550% |
+| Exception Types | 1 (ValueError) | 5 (Custom) | ⬆️ 400% |
+| Hardcoded Status Lists | 6+ files | 1 file (constants) | ⬇️ 83% |
+| Validation Utilities | 0 | 5 | ⬆️ New |
+| Transaction Utilities | 0 | 2 | ⬆️ New |
+| Production Readiness | Medium | High | ⬆️ Significant |
+
+### 🔄 Backward Compatibility
+
+- ✅ All changes are backward compatible
+- ✅ No breaking API changes
+- ✅ No database migrations required
+- ✅ Existing code continues to work
+
+---
+
 ## [1.0.1] - 2025-12-28 - MAJOR REFACTORING
 
 ### 🔥 Critical Fixes
@@ -175,7 +291,8 @@ Format: **Date - Version - Change Type: Description**
 - Contact multiple recruiters per job application
 - Format: `Alice - alice@co.com, Bob - bob@co.com`
 - Individual tracking per recruiter
-- Follow-ups per recruiter
+- Follow-ups per recruiter (same wave number for all recruiters)
+- Automatic duplicate prevention
 - **Documentation**: Integrated into main guides
 
 #### **Multi-Sheet Support**
@@ -184,14 +301,15 @@ Format: **Date - Version - Change Type: Description**
 - Configuration: `PROCESS_ALL_SHEETS=true`
 - Optional regex filter: `SHEET_NAME_FILTER=2024`
 - Unique row tracking: `{sheet_name}_{row_number}`
+- Each sheet can have same column structure
 - **Documentation**: Integrated into main guides
 
 #### **EmailService Layer**
 
 - Centralized email logic (was duplicated in CLI/API)
-- Methods: `send_first_contact()`, `send_follow_up()`, `get_application_timeline()`
-- Proper logging
-- Better error handling
+- Methods: `send_first_contact()`, `send_follow_up()`, `get_emails_for_application()`, `list_emails()`
+- Proper logging with decorators
+- Better error handling with custom exceptions
 - **Impact**: Eliminated code duplication between CLI and API
 
 ---
@@ -227,14 +345,64 @@ cv-mailer/
 
 ### Added
 
-- **Google Sheets Integration**: Read applications from spreadsheets
-- **Gmail Integration**: Send emails with rate limiting
-- **Application Tracking**: SQLite database with comprehensive models
-- **Follow-up Management**: Automatic follow-up detection
-- **Email Templates**: Jinja2-based HTML templates
-- **CLI Interface**: Rich terminal UI with progress bars
-- **Status Management**: Complete application lifecycle tracking
-- **Rate Limiting**: Configurable delays and daily limits
+#### **Core Features**
+
+- **Google Sheets Integration**:
+  - Read applications from spreadsheets
+  - Flexible column name matching (case-insensitive)
+  - Update sheet status after sending emails
+  - Support for custom messages from sheet
+  - Resume attachment (file path or Google Drive link)
+  
+- **Gmail Integration**:
+  - Send emails via Gmail API
+  - Resume attachment support
+  - Rate limiting (daily limit, delay between emails)
+  - Email tracking with Gmail message IDs
+  - Error handling and retry logic
+  
+- **Application Tracking**:
+  - SQLite database with comprehensive models
+  - 11 application statuses with validation
+  - Status history tracking
+  - Notes on status changes
+  - Timeline of events
+  - Search and filter capabilities
+  - Sorting and pagination
+  
+- **Follow-up Management**:
+  - Automatic follow-up detection based on FOLLOW_UP_DAYS
+  - Follow-up numbering (waves)
+  - Max follow-ups limit
+  - Timing validation
+  - Repair follow-up numbering utility
+  
+- **Email Templates**:
+  - Jinja2-based HTML templates
+  - First contact template
+  - Follow-up template
+  - Custom message support
+  - Signature with LinkedIn and contact info
+  
+- **CLI Interface**:
+  - Rich terminal UI with progress bars
+  - Process new applications
+  - Send follow-ups
+  - View statistics
+  - Dry-run mode
+  - Repair follow-up numbering
+  
+- **Status Management**:
+  - Complete application lifecycle tracking (11 statuses)
+  - Status transition validation
+  - Terminal states handling
+  - Automatic closed_at timestamp for terminal states
+  
+- **Rate Limiting**:
+  - Configurable delays between emails (EMAIL_DELAY_MIN/MAX)
+  - Daily email limit (DAILY_EMAIL_LIMIT)
+  - Database tracking of daily stats
+  - Automatic rate limit checking
 
 ---
 

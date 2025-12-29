@@ -24,6 +24,7 @@ The CV Mailer Web Dashboard is a modern, professional web interface that provide
 - 🎨 **Modern UI** - Clean, responsive design that works on all devices
 
 **Technology Stack:**
+
 - React 18 with TypeScript
 - Tailwind CSS for styling
 - TanStack Query for data fetching
@@ -34,80 +35,57 @@ The CV Mailer Web Dashboard is a modern, professional web interface that provide
 
 ### Prerequisites
 
-Before you start, ensure you have:
-
-1. **Node.js 18 or higher** installed
-   ```bash
-   node --version  # Should be v18.0.0 or higher
-   ```
-
-2. **CV Mailer API running** on port 8000
-   ```bash
-   # In the project root
-   source venv/bin/activate
-   cv-mailer-api
-   ```
-
-3. **Existing data** in your database (run the CLI at least once to sync from Google Sheets)
+1. **Node.js 18+** installed (`node --version`)
+2. **CV Mailer API running** on port 8000 (see [Setup Guide](SETUP_GUIDE.md))
+3. **Existing data** in database (run CLI at least once)
 
 ### Quick Start
 
 ```bash
-# Navigate to frontend directory
 cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
+npm install  # First time only
 npm run dev
 ```
 
-Open your browser to **http://localhost:3000**
+Open **<http://localhost:3000>**
+
+**For complete setup:** See [Setup Guide](SETUP_GUIDE.md) | [Command Reference](COMMANDS.md)
 
 ## Features
 
-### 1. Dashboard
+### Dashboard
 
-**Overview Statistics:**
-- Total applications count
-- Total emails sent
-- Follow-up emails count
-- Response rate percentage
-
-**Visualizations:**
-- Bar chart of applications by status
-- Pie chart showing status distribution
+- Overview statistics (applications, emails, follow-ups)
+- Visual charts (bar chart, pie chart)
 - Recent applications list
-
-**Navigation:**
-- Quick access to all major sections
 - Real-time data updates
 
-### 2. Applications Page
+### Applications Page
 
-**Features:**
-- **Search**: Find applications by company name or position
-- **Filter**: Filter by status (draft, applied, interviewing, etc.)
-- **Pagination**: Navigate through large lists efficiently
-- **Quick Actions**: Click any application to view details
+- **Search** by company name or position
+- **Filter** by status
+- **Pagination** for large lists
+- **Quick actions** - click to view details
+- **Status updates** with notes
+- **Progress tracker** visualization
 
-**Application Cards Show:**
+**Application cards show:**
+
 - Company name and position
-- Location
-- Current status (color-coded)
-- Creation and application dates
-- Number of emails sent
+- Location and status (color-coded)
+- Dates and email count
 
 ### 3. Application Detail Page
 
 **Complete Information:**
+
 - Full job details (location, salary, posting URL)
 - Timeline (created, applied, updated, closed dates)
 - Custom messages and notes
 - Associated recruiters with contact info
 
 **Email History:**
+
 - Complete communication log
 - Email type (cold email, follow-up, etc.)
 - Recipient information
@@ -115,6 +93,7 @@ Open your browser to **http://localhost:3000**
 - Follow-up tracking
 
 **Status Management:**
+
 - Update application status
 - Add notes for each status change
 - Real-time updates across the dashboard
@@ -122,6 +101,7 @@ Open your browser to **http://localhost:3000**
 ### 4. Recruiters Page
 
 **Features:**
+
 - Grid view of all recruiters
 - Contact information at a glance
 - Application count per recruiter
@@ -130,6 +110,7 @@ Open your browser to **http://localhost:3000**
 ### 5. Recruiter Detail Page
 
 **Shows:**
+
 - Complete contact information
 - All associated applications
 - Timeline of interactions
@@ -137,60 +118,39 @@ Open your browser to **http://localhost:3000**
 
 ## Installation
 
-### Development Setup
+See [Setup Guide](SETUP_GUIDE.md) for complete setup instructions.
+
+**Quick setup:**
 
 ```bash
-# 1. Navigate to frontend directory
 cd frontend
-
-# 2. Install dependencies
-npm install
-
-# 3. Start development server with hot reload
+npm install  # First time only
 npm run dev
 ```
 
-The development server includes:
-- Hot module replacement (instant updates)
-- Proxy to backend API
-- Type checking
-- ESLint integration
+**Prerequisites:**
 
-### Production Build
-
-```bash
-# Build optimized production bundle
-npm run build
-
-# Output will be in 'dist' directory
-# Preview production build locally
-npm run preview
-```
+- API must be running (see [Command Reference](COMMANDS.md))
+- Node.js 18+ required
 
 ## Usage
 
 ### Starting the Dashboard
 
-**Step 1: Start the API**
-```bash
-# Terminal 1 - In project root
-source venv/bin/activate
-cv-mailer-api
+1. **Start API** (Terminal 1):
 
-# API will run on http://localhost:8000
-```
+   ```bash
+   cv-mailer-api
+   ```
 
-**Step 2: Start the Frontend**
-```bash
-# Terminal 2 - In frontend directory
-npm run dev
+2. **Start Frontend** (Terminal 2):
 
-# Dashboard will run on http://localhost:3000
-```
+   ```bash
+   cd frontend
+   npm run dev
+   ```
 
-**Step 3: Open Browser**
-- Navigate to http://localhost:3000
-- Dashboard will automatically connect to API
+3. **Open Browser**: <http://localhost:3000>
 
 ### Common Workflows
 
@@ -225,23 +185,15 @@ npm run dev
 
 ## Configuration
 
-### Environment Variables
+### Environment Variables (Optional)
 
-Create `frontend/.env` file (optional):
+Create `frontend/.env` to override API URL:
 
 ```env
-# Override API URL (default: /api/v1 with proxy)
 VITE_API_URL=http://localhost:8000/api/v1
 ```
 
-**When to use:**
-- Custom API port
-- Production deployment
-- Different backend server
-
-### Proxy Configuration
-
-The default setup uses Vite proxy (no env var needed):
+**Default:** Uses Vite proxy (no configuration needed for development)
 
 ```typescript
 // vite.config.ts (already configured)
@@ -299,6 +251,7 @@ npm run build
 ```
 
 **Environment Setup:**
+
 - Add `VITE_API_URL` pointing to your production API
 - Ensure CORS is configured on API server
 
@@ -372,65 +325,15 @@ Now API and frontend run on same server!
 
 ## Troubleshooting
 
-### Cannot Connect to API
+See [Troubleshooting Guide](TROUBLESHOOTING.md) for complete troubleshooting reference.
 
-**Problem:** Dashboard shows "Error loading data"
+**Frontend-specific issues:**
 
-**Solutions:**
-1. Ensure API is running: `curl http://localhost:8000/health`
-2. Check browser console for errors (F12)
-3. Verify proxy config in `vite.config.ts`
-4. Check CORS settings in API
-
-### Build Errors
-
-**Problem:** `npm run build` fails
-
-**Solutions:**
-```bash
-# Clear cache and reinstall
-rm -rf node_modules package-lock.json
-npm install
-
-# Check Node version
-node --version  # Should be 18+
-
-# Run type checker
-npm run type-check
-```
-
-### Styling Issues
-
-**Problem:** UI looks broken or unstyled
-
-**Solutions:**
-1. Check Tailwind CSS is working: inspect element (F12)
-2. Rebuild: `npm run dev` (restart server)
-3. Clear browser cache: Ctrl+Shift+R
-4. Verify `index.css` imports Tailwind
-
-### Data Not Updating
-
-**Problem:** Changes in database not reflected in UI
-
-**Solutions:**
-1. Refresh page (Ctrl+R)
-2. Check React Query cache: Components use 30s stale time
-3. Restart development server: `npm run dev`
-4. Check browser console for API errors
-
-### Port Already in Use
-
-**Problem:** Port 3000 is already taken
-
-**Solutions:**
-```bash
-# Use different port
-npm run dev -- --port 3001
-
-# Or kill process on port 3000
-lsof -ti:3000 | xargs kill
-```
+- **Cannot connect to API** → Ensure API is running on port 8000
+- **Build errors** → Clear `node_modules` and reinstall
+- **Styling issues** → Check Tailwind CSS configuration
+- **Data not updating** → Refresh page or check React Query cache
+- **Port already in use** → Use `npm run dev -- --port 3001` or kill process on port 3000
 
 ## Performance Tips
 
@@ -452,53 +355,27 @@ lsof -ti:3000 | xargs kill
 ## Browser Support
 
 **Supported Browsers:**
+
 - Chrome/Edge 90+
 - Firefox 88+
 - Safari 14+
 - Mobile browsers (iOS Safari, Chrome Mobile)
 
 **Features Used:**
+
 - ES2020+ JavaScript
 - CSS Grid and Flexbox
 - Fetch API
 - Local Storage
 
-## Development Commands
+## Development
 
-```bash
-# Start development server
-npm run dev
+See [frontend/README.md](../frontend/README.md) for complete development documentation including:
 
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Run linter
-npm run lint
-
-# Type checking
-npm run type-check
-```
-
-## File Structure
-
-```
-frontend/
-├── src/
-│   ├── api/              # API client
-│   ├── components/       # React components
-│   │   ├── ui/          # Base UI components
-│   │   └── ...          # Feature components
-│   ├── pages/           # Route pages
-│   ├── lib/             # Utilities
-│   ├── types/           # TypeScript types
-│   └── App.tsx          # Root component
-├── public/              # Static assets
-├── index.html           # HTML template
-└── package.json         # Dependencies
-```
+- Development commands
+- File structure
+- Code style guidelines
+- Component patterns
 
 ## Best Practices
 
@@ -520,33 +397,25 @@ frontend/
 ## Security Notes
 
 **Current State:**
+
 - No authentication implemented
 - Designed for local/personal use
 - API should not be exposed publicly
 
 **Future Enhancements:**
+
 - JWT authentication
 - Role-based access control
 - API key management
 
-## Support
-
-- **Documentation**: See other docs in `docs/` folder
-- **API Reference**: http://localhost:8000/docs
-- **Issues**: Report bugs on GitHub
-- **Frontend README**: `frontend/README.md`
-
 ## Related Documentation
 
-- [API Guide](API_GUIDE.md) - REST API reference
-- [Setup Guide](SETUP_GUIDE.md) - Initial setup
-- [Quick Start](QUICK_START.md) - Getting started
-- [Architecture](design/ARCHITECTURE.md) - System design
+- **[Command Reference](COMMANDS.md)** - All CLI and API commands
+- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[API Guide](API_GUIDE.md)** - Complete API documentation
+- **[Setup Guide](SETUP_GUIDE.md)** - Complete setup instructions
+- **[Frontend README](../frontend/README.md)** - Development documentation
 
 ---
 
-**Last Updated**: December 2025  
-**Version**: 1.0.0
-
-Built with modern web technologies for the best user experience! 🚀
-
+**Need help?** Check [Troubleshooting Guide](TROUBLESHOOTING.md) or [Setup Guide](SETUP_GUIDE.md).

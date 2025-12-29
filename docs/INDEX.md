@@ -1,41 +1,51 @@
 # CV Mailer Documentation Index
 
-**Single source of truth for all project documentation.**
+**Your starting point for all CV Mailer documentation.**
 
-## 🚀 Getting Started (5 min)
+---
 
-Start here if you're new:
+## 🚀 New to CV Mailer?
 
-1. **[Quick Start Guide](QUICK_START.md)** - Get running in 5 minutes
-2. **[Setup Guide](SETUP_GUIDE.md)** - Detailed setup instructions  
-3. **[Google Sheets Template](GOOGLE_SHEETS_TEMPLATE.md)** - Sheet format & columns
+**Start here:**
 
-## 📖 Usage Guides
+1. **[Quick Start Guide](QUICK_START.md)** ⚡ - Get running in 5 minutes
+2. **[Setup Guide](SETUP_GUIDE.md)** 🔧 - Complete setup instructions
+3. **[Google Sheets Template](GOOGLE_SHEETS_TEMPLATE.md)** 📊 - Sheet format & columns
 
-- **[Web Dashboard Guide](WEB_DASHBOARD_GUIDE.md)** - Using the web interface
-- **[API Guide](API_GUIDE.md)** - REST API documentation
-- **[Email Templates](EMAIL_TEMPLATE_SAMPLES.md)** - Customizing email templates
+---
 
-## 🏗️ Architecture & Design
+## 📖 User Guides
 
-- **[Architecture Overview](design/ARCHITECTURE.md)** - System architecture
-- **[Changelog](CHANGELOG.md)** - All changes, fixes, and features
+**For end users:**
+
+- **[Command Reference](COMMANDS.md)** ⌨️ - All CLI and API commands
+- **[Web Dashboard Guide](WEB_DASHBOARD_GUIDE.md)** 🌐 - Using the web interface
+- **[API Guide](API_GUIDE.md)** 🚀 - REST API documentation
+- **[Google Sheets Template](GOOGLE_SHEETS_TEMPLATE.md)** 📊 - Sheet format reference
+- **[Email Templates](EMAIL_TEMPLATE_SAMPLES.md)** 📝 - Customizing email templates
+
+---
+
+## 🏗️ Technical Documentation
+
+**For developers:**
+
+- **[Architecture Guide](design/ARCHITECTURE.md)** 🏗️ - Complete system architecture
+  - Layer structure
+  - Design patterns
+  - Code organization
+  - Data flow examples
+  - Production readiness
+- **[Changelog](CHANGELOG.md)** 📝 - All changes, features, and improvements
+- **[Roadmap](design/FEATURE_SUGGESTIONS.md)** 🎯 - Planned features
+
+---
 
 ## 🔧 Troubleshooting
 
-- **[OAuth Issues](fix_enhancements/OAUTH_FIX.md)** - Fixing authentication
-- **Common Issues** - See [Setup Guide - Troubleshooting](SETUP_GUIDE.md#troubleshooting)
-
-## 🎯 Contributing & Development
-
-- **[Development Setup](../README.md#installation)** - Developer environment
-- **[API Development](API_GUIDE.md)** - Building API features
-- **[Frontend Development](../frontend/README.md)** - React dashboard development
-
-## 📋 Project Management
-
-- **[Roadmap](design/FEATURE_SUGGESTIONS.md)** - Planned features
-- **[Changelog](CHANGELOG.md)** - What's been done
+- **[Troubleshooting Guide](TROUBLESHOOTING.md)** 🔧 - Complete troubleshooting reference
+- **[OAuth Fix Guide](fix_enhancements/OAUTH_FIX.md)** 🔐 - OAuth-specific issues
+- **[Python Upgrade Guide](fix_enhancements/UPGRADE_PYTHON.md)** 🐍 - Upgrading Python version
 
 ---
 
@@ -43,37 +53,52 @@ Start here if you're new:
 
 ```
 docs/
-├── INDEX.md (this file)              # Documentation index
-├── QUICK_START.md                    # 5-minute setup
-├── SETUP_GUIDE.md                    # Complete setup
-├── API_GUIDE.md                      # API documentation
-├── GOOGLE_SHEETS_TEMPLATE.md         # Sheet format
-├── WEB_DASHBOARD_GUIDE.md            # Web UI guide
-├── EMAIL_TEMPLATE_SAMPLES.md         # Email templates
-├── CHANGELOG.md                      # All changes (NEW)
+├── INDEX.md (this file)              # 📖 Start here
+├── QUICK_START.md                    # ⚡ 5-minute setup
+├── SETUP_GUIDE.md                    # 🔧 Complete setup
+├── COMMANDS.md                       # ⌨️ All commands (CLI & API)
+├── TROUBLESHOOTING.md                # 🔧 Troubleshooting guide
+├── API_GUIDE.md                      # 🚀 API documentation
+├── WEB_DASHBOARD_GUIDE.md            # 🌐 Web UI guide
+├── GOOGLE_SHEETS_TEMPLATE.md         # 📊 Sheet format
+├── EMAIL_TEMPLATE_SAMPLES.md         # 📝 Email templates
+├── CHANGELOG.md                      # 📝 All changes
 ├── design/
-│   ├── ARCHITECTURE.md               # System architecture
-│   └── FEATURE_SUGGESTIONS.md        # Roadmap
+│   ├── ARCHITECTURE.md               # 🏗️ System architecture
+│   └── FEATURE_SUGGESTIONS.md        # 🎯 Roadmap
 └── fix_enhancements/
-    └── OAUTH_FIX.md                  # OAuth troubleshooting
+    ├── OAUTH_FIX.md                  # 🔐 OAuth troubleshooting
+    └── UPGRADE_PYTHON.md             # 🐍 Python upgrade guide
 ```
 
 ---
 
-## ❌ Deprecated Documentation
+## 🎯 Quick Reference
 
-**Removed for clarity** (information consolidated into CHANGELOG.md):
-
-- ~~REFACTORING_SUMMARY.md~~ (moved to CHANGELOG.md)
-- ~~design/DESIGN_EXPLANATION.md~~ (merged into ARCHITECTURE.md)
-- ~~design/refactoring_modernization/*~~ (moved to CHANGELOG.md)
-- ~~feature_changes/*~~ (moved to CHANGELOG.md)
-- ~~frontend/QUICK_FIX_SUMMARY.md~~ (moved to CHANGELOG.md)
-- ~~frontend/IMPLEMENTATION_SUMMARY.md~~ (moved to CHANGELOG.md)
-- ~~frontend/UI_IMPROVEMENTS.md~~ (moved to CHANGELOG.md)
-
-All historical changes are now in **[CHANGELOG.md](CHANGELOG.md)**.
+| What you need | Where to find it |
+|--------------|------------------|
+| Get started quickly | [Quick Start](QUICK_START.md) |
+| Setup instructions | [Setup Guide](SETUP_GUIDE.md) |
+| All commands | [Command Reference](COMMANDS.md) |
+| Troubleshooting | [Troubleshooting Guide](TROUBLESHOOTING.md) |
+| API endpoints | [API Guide](API_GUIDE.md) |
+| Web dashboard | [Web Dashboard Guide](WEB_DASHBOARD_GUIDE.md) |
+| Architecture details | [Architecture Guide](design/ARCHITECTURE.md) |
+| Recent changes | [Changelog](CHANGELOG.md) |
+| Planned features | [Roadmap](design/FEATURE_SUGGESTIONS.md) |
 
 ---
 
-**Need help?** Start with [Quick Start](QUICK_START.md) or check the [Changelog](CHANGELOG.md) for recent updates.
+## 📝 Documentation Principles
+
+**Our documentation follows these principles:**
+
+- ✅ **Single Source of Truth** - Information in one place
+- ✅ **Clear Navigation** - Easy to find what you need
+- ✅ **No Duplication** - Consolidated redundant docs
+- ✅ **Up-to-Date** - Reflects current codebase
+- ✅ **User-Focused** - Organized by user needs
+
+---
+
+**Questions?** Start with [Quick Start](QUICK_START.md) or check the [Changelog](CHANGELOG.md) for recent updates.

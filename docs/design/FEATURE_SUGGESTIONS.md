@@ -1,72 +1,174 @@
 # Feature Suggestions & Future Enhancements
 
-This document outlines additional features that could enhance the CV Mailer application.
+**Roadmap of planned features and enhancements for CV Mailer.**
+
+> 📖 **Current Features**: See [Changelog](../CHANGELOG.md) for implemented features
 
 **Last Updated**: December 2025  
 **Status**: Post-refactoring with REST API
 
 > 📖 **Related Docs**: [Architecture](ARCHITECTURE.md) | [API Guide](../API_GUIDE.md) | [Setup Guide](../SETUP_GUIDE.md)
 
-## ✅ Recently Implemented (December 2025)
+## ✅ Fully Implemented Features
 
-### REST API with FastAPI
+### Core Application Features
 
-- ✅ Complete CRUD for applications
-- ✅ Email records management
-- ✅ Recruiter management
-- ✅ Statistics endpoints
-- ✅ Auto-generated OpenAPI documentation (`/docs`, `/redoc`)
-- ✅ CORS support for web frontends
-- ✅ Dependency injection pattern
-- ✅ Health check endpoint
+- ✅ **Google Sheets Integration**
+  - Read applications from spreadsheets
+  - Multi-sheet support with filtering
+  - Flexible column name matching
+  - Update sheet status after sending emails
+  - Custom message support from sheet
+
+- ✅ **Gmail Integration**
+  - Send emails via Gmail API
+  - Resume attachment (file path or Google Drive link)
+  - Rate limiting (daily limit, delays between emails)
+  - Email tracking with message IDs
+  - Error handling and retry logic
+
+- ✅ **Application Management**
+  - 11 application statuses with validation
+  - Status transition validation
+  - Status history tracking
+  - Notes on status changes
+  - Timeline of events
+  - Search and filter (status, date, company, position)
+  - Sorting (created_at, updated_at, status)
+  - Pagination support
+
+- ✅ **Email Management**
+  - First contact emails
+  - Follow-up emails with numbering
+  - Email templates (Jinja2-based HTML)
+  - Custom message support
+  - Email history tracking
+  - Email status tracking (sent, failed, pending, bounced)
+  - Follow-up timing validation
+  - Max follow-ups limit
+
+- ✅ **Recruiter Management**
+  - Multi-recruiter support per application
+  - Recruiter parsing from sheet cells
+  - Recruiter contact information
+  - Application count per recruiter
+  - Individual email tracking per recruiter
+
+- ✅ **Statistics & Analytics**
+  - Total applications count
+  - Applications by status
+  - Total emails sent
+  - Follow-up emails count
+  - Applications reached interviews
+  - Applications reached offers
+  - Applications reached out
+  - Interview breakdown
+  - Response rate calculation
+
+### REST API (FastAPI)
+
+- ✅ **Complete API Endpoints**
+  - Applications CRUD with filtering, searching, sorting, pagination
+  - Email records management
+  - Recruiter management
+  - Statistics endpoints (comprehensive and summary)
+  - Sync endpoints (Google Sheets sync, follow-ups)
+  - Health check endpoint
+  - Timeline endpoint
+
+- ✅ **API Features**
+  - Auto-generated OpenAPI documentation (`/docs`, `/redoc`)
+  - CORS support for web frontends
+  - Dependency injection pattern
+  - Pydantic models for validation
+  - Comprehensive error handling
+  - Pagination support
 
 **Documentation**: See `docs/API_GUIDE.md`
 
-### Modern Package Structure
-
-- ✅ Proper Python packaging (`src/` layout)
-- ✅ CLI entry points (`cv-mailer`, `cv-mailer-api`)
-- ✅ Organized directories (`data/`, `logs/`, `assets/`)
-- ✅ Pip installable (`pip install -e .`)
-
-### Multi-Sheet & Multi-Recruiter
-
-- ✅ Process multiple sheets from one spreadsheet
-- ✅ Contact multiple recruiters per job
-- ✅ Unique row tracking across sheets
-- ✅ Individual recruiter email tracking
-
-## ✅ Recently Implemented (December 2025) - Continued
-
-### Web UI Dashboard
+### Web Dashboard (React)
 
 - ✅ **Status**: Completed (December 2025)
-- **Description**: Modern React-based web interface for managing applications
 - **Tech Stack**:
   - Backend: FastAPI ✅
   - Frontend: React 18 + TypeScript + Vite ✅
   - Styling: Tailwind CSS with custom design system ✅
   - Data Fetching: TanStack Query ✅
   - Charts: Recharts ✅
-- **Implemented Features**:
-  - ✅ Statistics dashboard with charts (bar, pie)
-  - ✅ Applications table with search and filters
-  - ✅ Pagination for large datasets
-  - ✅ Application detail view with complete information
-  - ✅ Email history tracking per application
-  - ✅ Status update functionality with notes
-  - ✅ Recruiter management and detail views
-  - ✅ Responsive design (mobile-friendly)
-  - ✅ Error handling and loading states
-  - ✅ Professional, clean UI/UX
-- **To implement**
-  - Multi-user authentication (header space ready)
-  - Email sending from UI (action areas prepared)
-  - Template management (layouts support modals)
-  - Calendar integration (date display areas ready)
-  - Quick actions (button areas designed)
+  - UI: Dark mode support ✅
+
+- ✅ **Implemented Features**:
+  - **Dashboard Page**:
+    - Statistics overview cards
+    - Bar chart of applications by status
+    - Status breakdown with detailed statistics
+    - Recent applications list
+    - Google Sheets sync controls
+  - **Applications Page**:
+    - Infinite scroll pagination
+    - Search by company/position (debounced)
+    - Multi-select status filtering
+    - Date filtering (today, this week, this month)
+    - Sorting (created_at, updated_at, status)
+    - Progress tracker visualization (toggleable)
+    - Expandable rows
+    - Action menu per application
+    - Clear all filters button
+  - **Application Detail Page**:
+    - Complete application information
+    - Progress tracker visualization
+    - Timeline of events
+    - Email history with viewer modal
+    - Recruiter information card
+    - Status update with notes
+    - Trigger reach-out and follow-up actions (✅ Email sending from UI is implemented)
+  - **Recruiters Pages**:
+    - Grid view of all recruiters
+    - Recruiter detail view with applications
+  - **UI/UX**:
+    - Responsive design (mobile-friendly)
+    - Dark mode support
+    - Error handling and loading states
+    - Toast notifications
+    - Error boundary
+    - Theme-aware chart labels
+
 - **Documentation**: See `docs/WEB_DASHBOARD_GUIDE.md`
 - **Location**: `frontend/` directory
+
+### CLI Interface
+
+- ✅ **Commands**:
+  - Process new applications (`cv-mailer`)
+  - Send follow-ups (`cv-mailer --follow-ups`)
+  - View statistics (`cv-mailer --stats`)
+  - Dry-run mode (`cv-mailer --dry-run`)
+  - Repair follow-up numbering (`cv-mailer --repair-followups`)
+
+- ✅ **Features**:
+  - Rich terminal UI with progress bars
+  - Color-coded output
+  - Error handling
+  - Configuration validation
+
+### Code Quality & Architecture
+
+- ✅ **Modern Package Structure**
+  - Proper Python packaging (`src/` layout)
+  - CLI entry points (`cv-mailer`, `cv-mailer-api`)
+  - Organized directories (`data/`, `logs/`, `assets/`)
+  - Pip installable (`pip install -e .`)
+
+- ✅ **Production Readiness**
+  - Comprehensive logging (65+ functions)
+  - Custom exception system
+  - Status constants (DRY principle)
+  - Input validation utilities
+  - Transaction management
+  - Database indexes for performance
+  - Repository pattern
+  - Service layer pattern
+  - Dependency injection
 
 **Quick Start**:
 
@@ -78,6 +180,12 @@ cv-mailer-api
 cd frontend && npm install && npm run dev
 # Open http://localhost:3000
 ```
+
+---
+
+## 🔮 Planned Features
+
+The following features are **not yet implemented** and are planned for future releases:
 
 ## 🔥 High Priority Features
 
@@ -114,7 +222,7 @@ cd frontend && npm install && npm run dev
   - Add `ResponseRecord.sentiment` field
   - Add `ResponseRecord.entities` (JSON field for dates, contacts)
 
-### 4. Calendar Integration
+### 3. Calendar Integration
 
 - **Status**: Not Started
 - **Description**: Sync interview dates to Google Calendar
@@ -130,7 +238,7 @@ cd frontend && npm install && npm run dev
 
 ## 🎯 Medium Priority Features
 
-### 5. Advanced Analytics & Reporting
+### 4. Advanced Analytics & Reporting
 
 - **Status**: Basic statistics available ✅ | Advanced Pending
 - **Current**: Application counts by status, email counts
@@ -144,7 +252,7 @@ cd frontend && npm install && npm run dev
 - **API Endpoints**: Extend `/api/v1/statistics/*`
 - **Visualization**: Chart.js, Recharts, or D3.js in web UI
 
-### 6. Multi-Resume Support
+### 5. Multi-Resume Support
 
 - **Status**: Not Started
 - **Description**: Use different resumes for different job types
@@ -164,7 +272,7 @@ cd frontend && npm install && npm run dev
   RESUME_FULLSTACK=./assets/resumes/fullstack.pdf
   ```
 
-### 7. Email Template Management
+### 6. Email Template Management
 
 - **Status**: Templates in code | UI Management Pending
 - **Current**: Templates in `src/cv_mailer/services/template_service.py`
@@ -179,7 +287,7 @@ cd frontend && npm install && npm run dev
   - `EmailTemplate` model (not to confuse with the service)
   - `template_id` foreign key in `EmailRecord`
 
-### 8. Email Scheduling
+### 7. Email Scheduling
 
 - **Status**: Not Started
 - **Description**: Schedule emails to be sent at specific times
@@ -193,7 +301,7 @@ cd frontend && npm install && npm run dev
   - Redis for job queue
   - `EmailRecord.scheduled_at` field
 
-### 9. Bulk Operations & CSV Import/Export
+### 8. Bulk Operations & CSV Import/Export
 
 - **Status**: Not Started
 - **Features**:
@@ -207,7 +315,7 @@ cd frontend && npm install && npm run dev
   - `GET /api/v1/applications/export?format=csv`
   - `PUT /api/v1/applications/bulk-update`
 
-### 10. Notification System
+### 9. Notification System
 
 - **Status**: Not Started
 - **Description**: Get notified of important events
@@ -226,7 +334,7 @@ cd frontend && npm install && npm run dev
 
 ## 💡 Nice-to-Have Features
 
-### 11. LinkedIn Integration
+### 10. LinkedIn Integration
 
 - **Status**: Not Started
 - **Description**: Auto-extract recruiter info from LinkedIn
@@ -238,7 +346,7 @@ cd frontend && npm install && npm run dev
 - **Challenges**: LinkedIn doesn't have public API for this
 - **Alternative**: Browser extension or manual paste
 
-### 12. Job Board Integration
+### 11. Job Board Integration
 
 - **Status**: Not Started
 - **Description**: Auto-import jobs from job boards
@@ -251,7 +359,7 @@ cd frontend && npm install && npm run dev
 - **Implementation**: Web scraping with `playwright` or `selenium`
 - **Legal**: Check ToS before scraping
 
-### 13. AI-Powered Email Generation
+### 12. AI-Powered Email Generation
 
 - **Status**: Not Started
 - **Description**: Generate personalized emails using AI
@@ -267,7 +375,7 @@ cd frontend && npm install && npm run dev
   - Or local LLM (Llama 3)
 - **API Endpoint**: `POST /api/v1/emails/generate-draft`
 
-### 14. Multi-Account Support
+### 13. Multi-Account Support
 
 - **Status**: Not Started
 - **Description**: Manage multiple Gmail accounts
@@ -281,7 +389,7 @@ cd frontend && npm install && npm run dev
   - Per-account rate limits
   - Unified dashboard
 
-### 15. Email Tracking & Analytics
+### 14. Email Tracking & Analytics
 
 - **Status**: Not Started
 - **Description**: Track email opens and link clicks
@@ -296,7 +404,7 @@ cd frontend && npm install && npm run dev
   - Database: `EmailEngagement` table
 - **Privacy**: Inform recipients about tracking
 
-### 16. Interview Preparation Assistant
+### 15. Interview Preparation Assistant
 
 - **Status**: Not Started (Future)
 - **Description**: Help prepare for interviews
@@ -310,7 +418,7 @@ cd frontend && npm install && npm run dev
 
 ## 🛠️ Technical Improvements
 
-### 17. Database Migrations (Alembic)
+### 16. Database Migrations (Alembic)
 
 - **Status**: Not Started | Needed for Schema Changes
 - **Description**: Proper migration system for database schema changes
@@ -325,7 +433,7 @@ cd frontend && npm install && npm run dev
 
 - **Benefits**: Safe schema updates without data loss
 
-### 18. Comprehensive Testing Suite
+### 17. Comprehensive Testing Suite
 
 - **Status**: Structure Ready | Tests Pending
 - **Types**:
@@ -344,7 +452,7 @@ cd frontend && npm install && npm run dev
 
 - **Tools**: pytest, pytest-cov, pytest-mock
 
-### 19. Docker Support
+### 18. Docker Support
 
 - **Status**: Not Started
 - **Description**: Containerize the application
@@ -358,7 +466,7 @@ cd frontend && npm install && npm run dev
   - Production-ready
 - **Configuration**: Mount `.env` and credentials
 
-### 20. CI/CD Pipeline
+### 19. CI/CD Pipeline
 
 - **Status**: Not Started
 - **Description**: Automated testing and deployment
@@ -370,7 +478,7 @@ cd frontend && npm install && npm run dev
   - Deploy (optional)
 - **File**: `.github/workflows/ci.yml`
 
-### 21. Database Performance Optimization
+### 20. Database Performance Optimization
 
 - **Status**: SQLite Sufficient | PostgreSQL Optional
 - **Improvements**:
@@ -386,7 +494,7 @@ cd frontend && npm install && npm run dev
   # Set to: postgresql://user:pass@host:5432/cv_mailer
   ```
 
-### 22. Caching Layer
+### 21. Caching Layer
 
 - **Status**: Not Started
 - **Description**: Cache expensive operations
@@ -403,7 +511,7 @@ cd frontend && npm install && npm run dev
       ...
   ```
 
-### 23. Rate Limiting for API
+### 22. Rate Limiting for API
 
 - **Status**: Not Started | Needed for Production
 - **Description**: Protect API from abuse
@@ -420,7 +528,7 @@ cd frontend && npm install && npm run dev
       ...
   ```
 
-### 24. Monitoring & Logging
+### 23. Monitoring & Logging
 
 - **Status**: Basic Logging ✅ | Advanced Pending
 - **Current**: Log to `logs/cv_mailer.log`
@@ -433,7 +541,7 @@ cd frontend && npm install && npm run dev
 
 ## 🔒 Security Enhancements
 
-### 25. Secrets Management
+### 24. Secrets Management
 
 - **Status**: `.env` File | Vault Pending
 - **Current**: Secrets in `.env` (good for local)
@@ -444,7 +552,7 @@ cd frontend && npm install && npm run dev
   - Google Secret Manager
 - **Priority**: High for production deployment
 
-### 26. Database Encryption
+### 25. Database Encryption
 
 - **Status**: Not Started
 - **Description**: Encrypt sensitive data at rest
@@ -454,7 +562,7 @@ cd frontend && npm install && npm run dev
   - Resume content (if stored)
 - **Implementation**: SQLAlchemy hybrid properties with encryption
 
-### 27. API Authentication
+### 26. API Authentication
 
 - **Status**: Not Started | Required for Multi-User
 - **Implementation**:
@@ -468,7 +576,7 @@ cd frontend && npm install && npm run dev
   - `POST /api/v1/auth/refresh`
   - `POST /api/v1/auth/logout`
 
-### 28. Audit Logging
+### 27. Audit Logging
 
 - **Status**: Email Records ✅ | Comprehensive Pending
 - **Current**: `EmailRecord` tracks all sent emails
@@ -482,7 +590,7 @@ cd frontend && npm install && npm run dev
 
 ## 🎨 User Experience Enhancements
 
-### 29. Interactive CLI Improvements
+### 28. Interactive CLI Improvements
 
 - **Status**: Rich Console ✅ | Interactive Pending
 - **Current**: Rich progress bars, tables, colors
@@ -493,7 +601,7 @@ cd frontend && npm install && npm run dev
   - TUI (Terminal UI) with `textual`
 - **Example**: `cv-mailer tui` for full-screen terminal UI
 
-### 30. Email Preview Mode
+### 29. Email Preview Mode
 
 - **Status**: Not Started
 - **Description**: Preview emails before sending
@@ -504,7 +612,7 @@ cd frontend && npm install && npm run dev
   - Send test email to self
 - **Implementation**: `cv-mailer preview --application-id 1`
 
-### 31. Configuration Validation & Testing
+### 30. Configuration Validation & Testing
 
 - **Status**: Basic Validation ✅ | Testing Pending
 - **Current**: `Config.validate()` checks required fields
@@ -516,7 +624,7 @@ cd frontend && npm install && npm run dev
   - Validate email templates
 - **Command**: `cv-mailer test-config`
 
-### 32. Onboarding Wizard
+### 31. Onboarding Wizard
 
 - **Status**: Not Started
 - **Description**: Interactive setup wizard for first-time users
@@ -545,10 +653,16 @@ cd frontend && npm install && npm run dev
 
 ### Phase 2: Web UI (Completed ✅ - December 2025)
 
-- ✅ Frontend application (React + TypeScript)
+- ✅ Frontend application (React + TypeScript + Vite)
 - ✅ Dashboard with charts and statistics
-- ✅ Application management interface
+- ✅ Application management interface (search, filter, sort, pagination)
+- ✅ Application detail page (timeline, email history, progress tracker)
 - ✅ Recruiter management pages
+- ✅ Google Sheets sync from UI
+- ✅ Status updates from UI
+- ✅ Trigger reach-out and follow-up from UI
+- ✅ Dark mode support
+- ✅ Responsive design
 - [ ] Authentication system (Future)
 - [ ] Real-time updates via WebSockets (Future)
 

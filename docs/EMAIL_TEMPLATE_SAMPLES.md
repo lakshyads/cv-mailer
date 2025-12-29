@@ -1,9 +1,9 @@
 # Email Template Samples
 
-Sample email templates for job applications.
+**Sample email templates and customization guide.**
 
 > 📖 **Customization**: Edit templates in `src/cv_mailer/services/template_service.py`  
-> 📚 **Setup**: See [Quick Start](QUICK_START.md) or [Setup Guide](SETUP_GUIDE.md)
+> 📚 **Setup**: See [Quick Start](QUICK_START.md) | [Setup Guide](SETUP_GUIDE.md)
 
 ---
 

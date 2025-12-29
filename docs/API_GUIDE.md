@@ -33,40 +33,29 @@ The CV Mailer API provides RESTful endpoints for:
 
 ### Installation
 
-```bash
-# Install with API dependencies
-pip install -e ".[api]"
+See [Setup Guide](SETUP_GUIDE.md) for complete installation instructions.
 
-# Or install all dependencies
-pip install -e ".[dev]"
+**Quick install:**
+
+```bash
+pip install -e ".[api]"
 ```
 
 ### Starting the Server
 
+See [Command Reference](COMMANDS.md) for all API commands.
+
+**Quick start:**
+
 ```bash
-# Using the provided command
 cv-mailer-api
-
-# Or using uvicorn directly
-uvicorn cv_mailer.api.app:app --reload
-
-# Custom host and port
-uvicorn cv_mailer.api.app:app --host 0.0.0.0 --port 8080
+# Visit http://localhost:8000/docs
 ```
 
 ### Verify Installation
 
 ```bash
-# Check health
 curl http://localhost:8000/health
-
-# Response:
-{
-  "status": "healthy",
-  "version": "1.0.0",
-  "docs": "/docs",
-  "health": "/health"
-}
 ```
 
 ## API Endpoints
@@ -937,29 +926,24 @@ services:
 - Set up monitoring (Sentry, DataDog)
 - Use HTTPS (reverse proxy with Nginx)
 
-## Support
+## Related Documentation
 
-- **Issues**: <https://github.com/lakshyads/cv-mailer/issues>
-- **Documentation**: This file and `/docs`
-- **API Docs**: <http://localhost:8000/docs> (when running)
+- **[Command Reference](COMMANDS.md)** - All CLI and API commands
+- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Setup Guide](SETUP_GUIDE.md)** - Complete setup instructions
+- **[Changelog](CHANGELOG.md)** - Version history and changes
+- **[Architecture Guide](design/ARCHITECTURE.md)** - System architecture
 
 ## Version History
 
-- **v1.0.0** (December 2025): Initial API release
-  - Complete CRUD for applications
-  - Email records management
-  - Recruiter management
-  - Statistics endpoints
-  - Auto-generated documentation
+See [Changelog](CHANGELOG.md) for complete version history and all changes.
 
 ## Future Enhancements
 
-- [ ] Authentication (OAuth2/JWT)
-- [ ] Webhooks for real-time updates
-- [ ] Batch operations
-- [ ] Export to CSV/PDF
-- [ ] Email template management via API
-- [ ] Schedule email sending
-- [ ] Analytics dashboard data
-- [ ] LinkedIn integration
-- [ ] Calendar integration for interviews
+See [Feature Roadmap](design/FEATURE_SUGGESTIONS.md) for planned features and enhancements.
+
+## Support
+
+- **Issues**: <https://github.com/lakshyads/cv-mailer/issues>
+- **API Docs**: <http://localhost:8000/docs> (when running)
+- **Documentation**: See [Documentation Index](INDEX.md)
