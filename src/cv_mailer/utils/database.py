@@ -2,11 +2,14 @@
 Database connection and session management utilities.
 """
 
+import logging
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from cv_mailer.config.settings import Config
 from cv_mailer.core.models import Base
+
+logger = logging.getLogger(__name__)
 
 # Database setup
 _engine = None
@@ -53,3 +56,54 @@ def init_database():
     """Initialize database tables."""
     engine = get_engine()
     Base.metadata.create_all(engine)
+
+
+def checkpoint_wal():
+    """
+    Checkpoint the WAL file, merging pending changes into main database.
+
+    This is useful to call on application shutdown to ensure all changes
+    are persisted and the WAL file is cleaned up.
+
+    Returns:
+        tuple: (pages_moved, pages_written, pages_in_wal) or None on error
+    """
+    global _engine
+    if _engine is None:
+        logger.debug("No database engine to checkpoint")
+        return None
+
+    try:
+        with _engine.connect() as conn:
+            result = conn.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
+            row = result.fetchone()
+            if row:
+                pages_moved, pages_written, pages_in_wal = row
+                logger.info(
+                    f"WAL checkpoint: {pages_moved} moved, "
+                    f"{pages_written} written, {pages_in_wal} remaining"
+                )
+                return (pages_moved, pages_written, pages_in_wal)
+    except Exception as e:
+        logger.warning(f"Error during WAL checkpoint: {e}")
+        return None
+
+
+def close_database():
+    """
+    Close database connections and checkpoint WAL file.
+
+    Call this on application shutdown to ensure proper cleanup.
+    """
+    global _engine, _Session
+
+    # Checkpoint WAL before closing
+    checkpoint_wal()
+
+    # Close engine
+    if _engine is not None:
+        _engine.dispose()
+        _engine = None
+        logger.info("Database engine closed")
+
+    _Session = None

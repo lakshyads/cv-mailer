@@ -2,7 +2,13 @@
 Utility functions and helpers.
 """
 
-from cv_mailer.utils.database import get_engine, get_session, init_database
+from cv_mailer.utils.database import (
+    get_engine,
+    get_session,
+    init_database,
+    checkpoint_wal,
+    close_database,
+)
 from cv_mailer.utils.date import format_date, parse_iso_datetime, parse_iso_datetime_optional
 from cv_mailer.utils.exceptions import (
     CVMailerException,
@@ -30,6 +36,8 @@ __all__ = [
     "get_engine",
     "get_session",
     "init_database",
+    "checkpoint_wal",
+    "close_database",
     # Date utilities
     "format_date",
     "parse_iso_datetime",

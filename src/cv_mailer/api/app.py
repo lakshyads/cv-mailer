@@ -20,7 +20,7 @@ import uvicorn
 
 from cv_mailer import __version__
 from cv_mailer.api.routers import applications, emails, recruiters, stats, sync
-from cv_mailer.utils import init_database
+from cv_mailer.utils import init_database, close_database
 from cv_mailer.config import Config
 
 
@@ -33,7 +33,10 @@ def setup_logging():
     logging.basicConfig(
         level=getattr(logging, Config.LOG_LEVEL),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[logging.FileHandler(Config.LOG_FILE), logging.StreamHandler(sys.stdout)],
+        handlers=[
+            logging.FileHandler(Config.LOG_FILE),
+            logging.StreamHandler(sys.stdout),
+        ],
     )
 
 
@@ -87,6 +90,20 @@ async def root():
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "version": __version__}
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """
+    Cleanup on application shutdown.
+    Checkpoints WAL file to ensure all changes are persisted.
+    """
+    logger.info("Shutting down API server...")
+    try:
+        close_database()
+        logger.info("Shutdown complete")
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}", exc_info=True)
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):
