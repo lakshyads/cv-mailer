@@ -54,6 +54,18 @@ class GoogleSheetsClient:
         except HttpError as error:
             logger.error(f"Error listing sheets: {error}")
             raise ExternalServiceError(f"Google Sheets API error: {error}")
+        except TimeoutError as error:
+            logger.error(f"Timeout connecting to Google Sheets API: {error}")
+            raise ExternalServiceError(
+                "Connection to Google Sheets API timed out. "
+                "Please check your internet connection and try again."
+            )
+        except OSError as error:
+            logger.error(f"Network error connecting to Google Sheets API: {error}")
+            raise ExternalServiceError(
+                "Network error connecting to Google Sheets API. "
+                "Please check your internet connection and try again."
+            )
 
     @log_function_call(logger)
     @log_execution_time(logger)
@@ -101,6 +113,18 @@ class GoogleSheetsClient:
         except HttpError as error:
             logger.error(f"Error reading from Google Sheets: {error}")
             raise ExternalServiceError(f"Google Sheets API error: {error}")
+        except TimeoutError as error:
+            logger.error(f"Timeout reading from Google Sheets: {error}")
+            raise ExternalServiceError(
+                "Connection to Google Sheets API timed out. "
+                "Please check your internet connection and try again."
+            )
+        except OSError as error:
+            logger.error(f"Network error reading from Google Sheets: {error}")
+            raise ExternalServiceError(
+                "Network error reading from Google Sheets. "
+                "Please check your internet connection and try again."
+            )
 
     @log_function_call(logger)
     @log_execution_time(logger)
@@ -171,6 +195,18 @@ class GoogleSheetsClient:
         except HttpError as error:
             logger.error(f"Error updating Google Sheets: {error}")
             raise ExternalServiceError(f"Google Sheets API error: {error}")
+        except TimeoutError as error:
+            logger.error(f"Timeout updating Google Sheets: {error}")
+            raise ExternalServiceError(
+                "Connection to Google Sheets API timed out. "
+                "Please check your internet connection and try again."
+            )
+        except OSError as error:
+            logger.error(f"Network error updating Google Sheets: {error}")
+            raise ExternalServiceError(
+                "Network error updating Google Sheets. "
+                "Please check your internet connection and try again."
+            )
 
     @log_function_call(logger)
     def update_row(self, row: int, updates: Dict[str, str], worksheet_name: str = None):
@@ -209,6 +245,12 @@ class GoogleSheetsClient:
         except HttpError as error:
             logger.error(f"Error updating row in Google Sheets: {error}")
             raise ExternalServiceError(f"Google Sheets API error: {error}")
+        except (TimeoutError, OSError) as error:
+            logger.error(f"Network error updating row: {error}")
+            raise ExternalServiceError(
+                "Network error updating Google Sheets. "
+                "Please check your internet connection and try again."
+            )
 
     @log_function_call(logger)
     def get_column_letter(self, column_name: str, worksheet_name: str = None) -> Optional[str]:

@@ -5,6 +5,7 @@ Google Sheets API authentication utilities.
 import logging
 import pickle
 import os
+import httplib2
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
@@ -63,6 +64,16 @@ class SheetsAuthenticator:
                     with open(cls.TOKEN_FILE, "wb") as token:
                         pickle.dump(creds, token)
 
-        service = build("sheets", "v4", credentials=creds)
+        # Configure HTTP client with timeouts to prevent hanging
+        # The timeout ensures fast failure (30s) instead of hanging indefinitely
+        # Discovery document is cached by default, so it only downloads once
+        http = httplib2.Http(timeout=30)  # 30 second timeout
+        service = build(
+            "sheets",
+            "v4",
+            credentials=creds,
+            http=http,
+            # cache_discovery defaults to True, which caches the discovery doc
+        )
         logger.info("Successfully authenticated with Google Sheets API")
         return service

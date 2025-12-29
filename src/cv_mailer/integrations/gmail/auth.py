@@ -5,7 +5,7 @@ Gmail API authentication utilities.
 import logging
 import pickle
 import os
-from google.oauth2.credentials import Credentials
+import httplib2
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -52,6 +52,16 @@ class GmailAuthenticator:
             with open(cls.TOKEN_FILE, "wb") as token:
                 pickle.dump(creds, token)
 
-        service = build("gmail", "v1", credentials=creds)
+        # Configure HTTP client with timeouts to prevent hanging
+        # The timeout ensures fast failure (30s) instead of hanging
+        # Discovery document is cached by default, so it only downloads once
+        http = httplib2.Http(timeout=30)  # 30 second timeout
+        service = build(
+            "gmail",
+            "v1",
+            credentials=creds,
+            http=http,
+            # cache_discovery defaults to True, which caches discovery doc
+        )
         logger.info("Successfully authenticated with Gmail API")
         return service
