@@ -11,7 +11,7 @@ T = TypeVar("T")
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response."""
-    
+
     total: int
     limit: int
     offset: int
@@ -22,7 +22,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
 class TimelineEvent(BaseModel):
     """Timeline event for application history."""
-    
+
     id: str
     type: str
     title: str
@@ -33,14 +33,13 @@ class TimelineEvent(BaseModel):
 
 class MessageResponse(BaseModel):
     """Simple message response."""
-    
+
     message: str
 
 
 class HealthCheckResponse(BaseModel):
     """Health check response."""
-    
+
     status: str
     version: str
     checks: Optional[dict[str, bool]] = None
-

@@ -135,9 +135,7 @@ class StatisticsService:
 
         # Applications that reached out (reached_out or beyond)
         # This counts all applications that have progressed beyond "applied" status
-        total_reached_out = sum(
-            by_status.get(status.value, 0) for status in REACHED_OUT_STATUSES
-        )
+        total_reached_out = sum(by_status.get(status.value, 0) for status in REACHED_OUT_STATUSES)
 
         # Total applications applied = all applications (since all are imported as "applied")
         total_applications_applied = total_apps

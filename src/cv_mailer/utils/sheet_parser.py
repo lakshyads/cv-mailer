@@ -8,18 +8,18 @@ from typing import Optional, Dict, Any, List
 def get_row_value(row: Dict[str, Any], column_names: List[str], default: Any = None) -> Any:
     """
     Get value from row dictionary using multiple possible column names.
-    
+
     Tries each column name in order and returns the first non-empty value found.
     If all are empty or missing, returns the default value.
-    
+
     Args:
         row: Dictionary representing a row from Google Sheets
         column_names: List of possible column names to try (in order of preference)
         default: Default value to return if no match is found
-        
+
     Returns:
         Value from row, or default if not found
-        
+
     Example:
         company_name = get_row_value(row, ["Company Name", "company_name", "Company", "company"], "")
     """
@@ -33,13 +33,13 @@ def get_row_value(row: Dict[str, Any], column_names: List[str], default: Any = N
 def extract_application_data(row: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract application data from Google Sheets row with flexible column name matching.
-    
+
     This function handles various column name formats (e.g., "Company Name", "company_name", "Company")
     to make the system more resilient to different spreadsheet formats.
-    
+
     Args:
         row: Dictionary representing a row from Google Sheets
-        
+
     Returns:
         Dictionary with extracted application data:
         - company_name: str
@@ -52,15 +52,9 @@ def extract_application_data(row: Dict[str, Any]) -> Dict[str, Any]:
     """
     return {
         "company_name": get_row_value(
-            row,
-            ["Company Name", "company_name", "Company", "company"],
-            ""
+            row, ["Company Name", "company_name", "Company", "company"], ""
         ),
-        "position": get_row_value(
-            row,
-            ["Position", "position"],
-            ""
-        ),
+        "position": get_row_value(row, ["Position", "position"], ""),
         "recruiter_cell": get_row_value(
             row,
             [
@@ -71,13 +65,9 @@ def extract_application_data(row: Dict[str, Any]) -> Dict[str, Any]:
                 "Recruiter Email",
                 "recruiter_email",
             ],
-            ""
+            "",
         ),
-        "location": get_row_value(
-            row,
-            ["Location", "location"],
-            None
-        ),
+        "location": get_row_value(row, ["Location", "location"], None),
         "job_posting_url": get_row_value(
             row,
             [
@@ -86,7 +76,7 @@ def extract_application_data(row: Dict[str, Any]) -> Dict[str, Any]:
                 "Job Posting",
                 "job_posting",
             ],
-            None
+            None,
         ),
         "expected_salary": get_row_value(
             row,
@@ -97,7 +87,7 @@ def extract_application_data(row: Dict[str, Any]) -> Dict[str, Any]:
                 "Salary",
                 "salary",
             ],
-            None
+            None,
         ),
         "custom_message": get_row_value(
             row,
@@ -107,7 +97,6 @@ def extract_application_data(row: Dict[str, Any]) -> Dict[str, Any]:
                 "Custom Message",
                 "custom_message",
             ],
-            None
+            None,
         ),
     }
-

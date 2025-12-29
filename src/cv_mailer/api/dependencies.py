@@ -48,7 +48,7 @@ def get_application_service(
 ) -> ApplicationService:
     """
     Get application service.
-    
+
     This is what API endpoints should use for application operations.
     """
     repository = ApplicationRepository(session)
@@ -60,7 +60,7 @@ def get_email_service(
 ) -> EmailService:
     """
     Get email service.
-    
+
     This is what API endpoints should use for email operations.
     """
     tracker = ApplicationTracker()  # Uses its own session internally
@@ -73,7 +73,7 @@ def get_recruiter_service(
 ) -> RecruiterService:
     """
     Get recruiter service.
-    
+
     This is what API endpoints should use for recruiter operations.
     """
     repository = RecruiterRepository(session)
@@ -85,7 +85,7 @@ def get_statistics_service(
 ) -> StatisticsService:
     """
     Get statistics service.
-    
+
     This is what API endpoints should use for statistics.
     """
     return StatisticsService(session=session)
@@ -94,7 +94,7 @@ def get_statistics_service(
 def get_sync_service() -> SyncService:
     """
     Get sync service.
-    
+
     This is what API endpoints should use for Google Sheets sync operations.
     """
     return SyncService()
@@ -106,7 +106,7 @@ def get_sync_service() -> SyncService:
 def get_tracker() -> Generator[ApplicationTracker, None, None]:
     """
     LEGACY: Get ApplicationTracker instance.
-    
+
     TODO: Phase out in favor of ApplicationService.
     """
     tracker = ApplicationTracker()
@@ -116,34 +116,28 @@ def get_tracker() -> Generator[ApplicationTracker, None, None]:
         tracker.session.close()
 
 
-def get_application_repository(
-    session: Session = Depends(get_db_session)
-) -> ApplicationRepository:
+def get_application_repository(session: Session = Depends(get_db_session)) -> ApplicationRepository:
     """
     INTERNAL USE ONLY: Direct repository access.
-    
+
     API endpoints should use ApplicationService instead.
     """
     return ApplicationRepository(session)
 
 
-def get_email_repository(
-    session: Session = Depends(get_db_session)
-) -> EmailRepository:
+def get_email_repository(session: Session = Depends(get_db_session)) -> EmailRepository:
     """
     INTERNAL USE ONLY: Direct repository access.
-    
+
     API endpoints should use EmailService instead.
     """
     return EmailRepository(session)
 
 
-def get_recruiter_repository(
-    session: Session = Depends(get_db_session)
-) -> RecruiterRepository:
+def get_recruiter_repository(session: Session = Depends(get_db_session)) -> RecruiterRepository:
     """
     INTERNAL USE ONLY: Direct repository access.
-    
+
     API endpoints should use RecruiterService instead.
     """
     return RecruiterRepository(session)

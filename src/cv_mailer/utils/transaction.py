@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def transaction(session: Session) -> Generator[Session, None, None]:
     """
     Context manager for database transactions with automatic rollback on errors.
-    
+
     Usage:
         with transaction(session) as tx_session:
             # Perform operations
@@ -38,11 +38,11 @@ def transaction(session: Session) -> Generator[Session, None, None]:
 def safe_commit(session: Session, operation_name: str = "operation") -> bool:
     """
     Safely commit a session with error handling and logging.
-    
+
     Args:
         session: SQLAlchemy session
         operation_name: Name of the operation for logging
-        
+
     Returns:
         True if commit succeeded, False otherwise
     """
@@ -54,4 +54,3 @@ def safe_commit(session: Session, operation_name: str = "operation") -> bool:
         session.rollback()
         logger.error(f"{operation_name} failed to commit: {e}", exc_info=True)
         return False
-

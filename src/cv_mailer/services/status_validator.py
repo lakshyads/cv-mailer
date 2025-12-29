@@ -111,4 +111,3 @@ class StatusValidator:
         is_valid, reason = cls.can_transition(from_status, to_status)
         if not is_valid:
             raise BusinessLogicError(reason)
-

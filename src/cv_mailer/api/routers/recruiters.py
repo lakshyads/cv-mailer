@@ -57,7 +57,7 @@ async def get_recruiter(
     """Get details of a specific recruiter."""
     try:
         recruiter = service.get_recruiter(recruiter_id)
-        
+
         # Manually serialize applications since Pydantic might not handle relationship properly
         applications = [
             {
@@ -68,7 +68,7 @@ async def get_recruiter(
             }
             for app in recruiter.job_applications
         ]
-        
+
         return RecruiterDetailResponse(
             id=recruiter.id,
             name=recruiter.name,

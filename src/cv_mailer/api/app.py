@@ -23,20 +23,19 @@ from cv_mailer.api.routers import applications, emails, recruiters, stats, sync
 from cv_mailer.utils import init_database
 from cv_mailer.config import Config
 
+
 # Setup logging
 def setup_logging():
     """Setup logging configuration for API."""
     log_file = Path(Config.LOG_FILE)
     log_file.parent.mkdir(parents=True, exist_ok=True)
-    
+
     logging.basicConfig(
         level=getattr(logging, Config.LOG_LEVEL),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(Config.LOG_FILE),
-            logging.StreamHandler(sys.stdout)
-        ],
+        handlers=[logging.FileHandler(Config.LOG_FILE), logging.StreamHandler(sys.stdout)],
     )
+
 
 setup_logging()
 logger = logging.getLogger(__name__)

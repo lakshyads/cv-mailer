@@ -16,18 +16,18 @@ logger = logging.getLogger(__name__)
 
 class RecruiterRepository:
     """Repository for Recruiter entities."""
-    
+
     def __init__(self, session: Session):
         self.session = session
-    
+
     @log_function_call(logger)
     def find_by_id(self, recruiter_id: int) -> Optional[Recruiter]:
         """
         Find recruiter by ID with applications loaded.
-        
+
         Args:
             recruiter_id: Recruiter ID
-            
+
         Returns:
             Recruiter or None
         """
@@ -37,20 +37,18 @@ class RecruiterRepository:
             .filter_by(id=recruiter_id)
             .first()
         )
-    
+
     @log_function_call(logger)
     def find_all(
-        self,
-        limit: int = 100,
-        offset: int = 0
+        self, limit: int = 100, offset: int = 0
     ) -> Tuple[List[Tuple[Recruiter, int]], int]:
         """
         Find recruiters with application counts (optimized).
-        
+
         Args:
             limit: Maximum results
             offset: Offset for pagination
-            
+
         Returns:
             Tuple of (list of (recruiter, app_count), total_count)
         """
@@ -58,14 +56,13 @@ class RecruiterRepository:
         query = (
             self.session.query(
                 Recruiter,
-                func.count(job_application_recruiter.c.job_application_id).label('app_count')
+                func.count(job_application_recruiter.c.job_application_id).label("app_count"),
             )
             .outerjoin(job_application_recruiter)
             .group_by(Recruiter.id)
         )
-        
+
         total = self.session.query(Recruiter).count()
         results = query.offset(offset).limit(limit).all()
-        
-        return results, total
 
+        return results, total
