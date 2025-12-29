@@ -92,7 +92,7 @@ class EmailService:
             )
 
             if existing_email:
-                logger.info(
+                logger.debug(
                     f"Already sent first contact to {recruiter.email} for app {application_id}"
                 )
                 continue
@@ -108,7 +108,7 @@ class EmailService:
             )
 
             if dry_run:
-                logger.info(f"[DRY RUN] Would send first contact to {recruiter.email}")
+                logger.debug(f"[DRY RUN] Would send first contact to {recruiter.email}")
                 sent_count += 1
                 continue
 
@@ -131,7 +131,10 @@ class EmailService:
                     follow_up_number=0,
                 )
                 sent_count += 1
-                logger.info(f"✓ Sent first contact to {recruiter.email} for app {application_id}")
+                logger.info(
+                    f"Email sent: first contact to {recruiter.email} for application {application_id}, "
+                    f"message_id={message_id}"
+                )
             else:
                 self.tracker.record_email_failed(
                     job_application_id=app.id,
@@ -221,7 +224,10 @@ class EmailService:
             )
 
             if existing_follow_up:
-                logger.info(f"Already sent follow-up #{follow_up_number} to {recruiter.email}")
+                logger.debug(
+                    f"Already sent follow-up #{follow_up_number} to {recruiter.email} "
+                    f"for app {application_id}"
+                )
                 continue
 
             # Generate email
@@ -234,7 +240,7 @@ class EmailService:
             )
 
             if dry_run:
-                logger.info(
+                logger.debug(
                     f"[DRY RUN] Would send follow-up #{follow_up_number} to {recruiter.email}"
                 )
                 sent_count += 1
@@ -259,7 +265,8 @@ class EmailService:
                 )
                 sent_count += 1
                 logger.info(
-                    f"✓ Sent follow-up #{follow_up_number} to {recruiter.email} for app {application_id}"
+                    f"Email sent: follow-up #{follow_up_number} to {recruiter.email} "
+                    f"for application {application_id}, message_id={message_id}"
                 )
             else:
                 self.tracker.record_email_failed(

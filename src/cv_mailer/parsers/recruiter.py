@@ -104,7 +104,7 @@ class RecruiterParser:
                 # Keep recruiters without emails for now (might want to log this)
                 logger.warning(f"Recruiter entry has no email: {recruiter}")
 
-        logger.info(f"Parsed {len(unique_recruiters)} unique recruiters from: {cell_value[:50]}...")
+        logger.debug(f"Parsed {len(unique_recruiters)} unique recruiters from: {cell_value[:50]}...")
         return unique_recruiters
 
     @staticmethod

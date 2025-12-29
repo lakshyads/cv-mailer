@@ -43,7 +43,11 @@ class SheetsAuthenticator:
         # If no valid credentials, authenticate
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
+                try:
+                    creds.refresh(Request())
+                except Exception as e:
+                    # Don't log here - token refresh errors will bubble up to API layer
+                    raise
             else:
                 # Try service account first, then OAuth
                 if os.path.exists(Config.GOOGLE_CREDENTIALS_FILE):
@@ -53,12 +57,23 @@ class SheetsAuthenticator:
                             Config.GOOGLE_CREDENTIALS_FILE,
                             scopes=cls.SCOPES,
                         )
-                    except Exception:
+                    except Exception as e:
                         # If not service account, use OAuth flow
-                        flow = InstalledAppFlow.from_client_secrets_file(
-                            Config.GOOGLE_CREDENTIALS_FILE, cls.SCOPES
-                        )
-                        creds = flow.run_local_server(port=0)
+                        try:
+                            flow = InstalledAppFlow.from_client_secrets_file(
+                                Config.GOOGLE_CREDENTIALS_FILE, cls.SCOPES
+                            )
+                            creds = flow.run_local_server(port=0)
+                        except Exception as oauth_error:
+                            # Don't log here - authentication errors will bubble up to API layer
+                            raise
+                else:
+                    logger.error(
+                        f"Google credentials file not found: {Config.GOOGLE_CREDENTIALS_FILE}"
+                    )
+                    raise FileNotFoundError(
+                        f"Google credentials file not found: {Config.GOOGLE_CREDENTIALS_FILE}"
+                    )
 
                 # Save credentials for next run (only for OAuth)
                 if not isinstance(creds, service_account.Credentials):

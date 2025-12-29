@@ -65,6 +65,12 @@ class GmailSender:
                             f"Daily email limit reached: {stats.emails_sent}/{Config.DAILY_EMAIL_LIMIT}"
                         )
                         return False
+                    # Log when approaching limit (80% threshold)
+                    elif stats.emails_sent >= int(Config.DAILY_EMAIL_LIMIT * 0.8):
+                        logger.info(
+                            f"Approaching daily email limit: {stats.emails_sent}/{Config.DAILY_EMAIL_LIMIT} "
+                            f"({int((stats.emails_sent / Config.DAILY_EMAIL_LIMIT) * 100)}%)"
+                        )
                 else:
                     # Create new stats record (don't commit yet, just prepare)
                     # Set date to start of today in UTC

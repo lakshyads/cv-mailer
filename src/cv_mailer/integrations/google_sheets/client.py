@@ -48,20 +48,20 @@ class GoogleSheetsClient:
                     {"title": properties.get("title"), "sheetId": properties.get("sheetId")}
                 )
 
-            logger.info(f"Found {len(sheets)} sheets in spreadsheet")
+            logger.debug(f"Found {len(sheets)} sheets in spreadsheet")
             return sheets
 
         except HttpError as error:
-            logger.error(f"Error listing sheets: {error}")
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(f"Google Sheets API error: {error}")
-        except TimeoutError as error:
-            logger.error(f"Timeout connecting to Google Sheets API: {error}")
+        except TimeoutError:
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(
                 "Connection to Google Sheets API timed out. "
                 "Please check your internet connection and try again."
             )
-        except OSError as error:
-            logger.error(f"Network error connecting to Google Sheets API: {error}")
+        except OSError:
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(
                 "Network error connecting to Google Sheets API. "
                 "Please check your internet connection and try again."
@@ -107,20 +107,20 @@ class GoogleSheetsClient:
                 row_dict["_sheet_name"] = sheet_name  # Store sheet name for reference
                 rows.append(row_dict)
 
-            logger.info(f"Read {len(rows)} rows from worksheet: {sheet_name}")
+            logger.debug(f"Read {len(rows)} rows from worksheet: {sheet_name}")
             return rows
 
         except HttpError as error:
-            logger.error(f"Error reading from Google Sheets: {error}")
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(f"Google Sheets API error: {error}")
-        except TimeoutError as error:
-            logger.error(f"Timeout reading from Google Sheets: {error}")
+        except TimeoutError:
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(
                 "Connection to Google Sheets API timed out. "
                 "Please check your internet connection and try again."
             )
-        except OSError as error:
-            logger.error(f"Network error reading from Google Sheets: {error}")
+        except OSError:
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(
                 "Network error reading from Google Sheets. "
                 "Please check your internet connection and try again."
@@ -155,16 +155,16 @@ class GoogleSheetsClient:
             try:
                 rows = self.read_all_rows(sheet_name)
                 all_rows.extend(rows)
-                logger.info(f"Read {len(rows)} rows from sheet: {sheet_name}")
+                logger.debug(f"Read {len(rows)} rows from sheet: {sheet_name}")
             except ExternalServiceError:
-                # Re-raise ExternalServiceError
+                # Re-raise ExternalServiceError (don't log here)
                 raise
             except Exception as e:
-                logger.warning(f"Error reading sheet {sheet_name}: {e}")
+                # Don't log here - let it bubble up to API layer for logging
                 # Wrap in ExternalServiceError for consistency
                 raise ExternalServiceError(f"Error reading sheet {sheet_name}: {e}")
 
-        logger.info(f"Total rows read from all sheets: {len(all_rows)}")
+        logger.debug(f"Total rows read from all sheets: {len(all_rows)}")
         return all_rows
 
     @log_function_call(logger)
@@ -193,16 +193,16 @@ class GoogleSheetsClient:
             logger.info(f"Updated cell {column}{row} in {sheet_name} with value: {value}")
 
         except HttpError as error:
-            logger.error(f"Error updating Google Sheets: {error}")
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(f"Google Sheets API error: {error}")
-        except TimeoutError as error:
-            logger.error(f"Timeout updating Google Sheets: {error}")
+        except TimeoutError:
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(
                 "Connection to Google Sheets API timed out. "
                 "Please check your internet connection and try again."
             )
-        except OSError as error:
-            logger.error(f"Network error updating Google Sheets: {error}")
+        except OSError:
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(
                 "Network error updating Google Sheets. "
                 "Please check your internet connection and try again."
@@ -243,10 +243,10 @@ class GoogleSheetsClient:
                     self.update_cell(row, col_letter, str(value), worksheet_name=sheet_name)
 
         except HttpError as error:
-            logger.error(f"Error updating row in Google Sheets: {error}")
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(f"Google Sheets API error: {error}")
-        except (TimeoutError, OSError) as error:
-            logger.error(f"Network error updating row: {error}")
+        except (TimeoutError, OSError):
+            # Don't log here - let it bubble up to API layer for logging
             raise ExternalServiceError(
                 "Network error updating Google Sheets. "
                 "Please check your internet connection and try again."
@@ -283,6 +283,7 @@ class GoogleSheetsClient:
 
             return None
 
-        except HttpError as error:
-            logger.error(f"Error getting column letter: {error}")
+        except HttpError:
+            # Don't log here - this is a non-critical helper method
+            # Errors are handled gracefully by returning None
             return None

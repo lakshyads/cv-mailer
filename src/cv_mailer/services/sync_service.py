@@ -29,7 +29,7 @@ class SyncService:
 
         self.email_service = EmailService(gmail_sender=GmailSender(), tracker=self.tracker)
 
-    @log_function_call(logger)
+    @log_function_call(logger, level=logging.DEBUG)
     @log_execution_time(logger)
     def sync_applications(self, dry_run: bool = False) -> Dict[str, Any]:
         """
@@ -61,11 +61,16 @@ class SyncService:
             if Config.PROCESS_ALL_SHEETS:
                 rows = self.sheets_client.read_all_sheets(sheet_filter=Config.SHEET_NAME_FILTER)
                 filter_str = Config.SHEET_NAME_FILTER or "none"
-                logger.info(f"Processing all sheets (filter: {filter_str})")
+                logger.info(
+                    f"Sync started: Processing all sheets (filter: {filter_str}), "
+                    f"dry_run={dry_run}"
+                )
             else:
                 sheet_name = Config.WORKSHEET_NAME
                 rows = self.sheets_client.read_all_rows(worksheet_name=sheet_name)
-                logger.info(f"Processing single sheet: {sheet_name}")
+                logger.info(
+                    f"Sync started: Processing single sheet '{sheet_name}', dry_run={dry_run}"
+                )
 
             if not rows:
                 logger.warning("No data found in Google Sheets")
@@ -127,7 +132,7 @@ class SyncService:
                         )
 
                         if sent_emails > 0:
-                            logger.info(
+                            logger.debug(
                                 f"Skipping {sheet_name}:row {row_id}: "
                                 f"application already processed "
                                 f"({sent_emails} email(s) already sent)"
@@ -153,7 +158,7 @@ class SyncService:
 
                     # Send emails using service
                     if dry_run:
-                        logger.info(
+                        logger.debug(
                             f"DRY RUN: Would send to {len(recruiters)} "
                             f"recruiter(s) for {company_name} "
                             f"({sheet_name}:row {row_id})"
@@ -168,8 +173,8 @@ class SyncService:
                             if emails_sent > 0:
                                 sent_count += emails_sent
                                 logger.info(
-                                    f"Sent {emails_sent} email(s) - "
-                                    f"{position} - {company_name} "
+                                    f"Sent {emails_sent} email(s) for application {job_app.id} - "
+                                    f"{position} at {company_name} "
                                     f"({sheet_name}:row {row_id})"
                                 )
 
@@ -209,6 +214,12 @@ class SyncService:
             if errors:
                 message += f", {len(errors)} errors"
 
+            # Log sync completion summary at INFO level for observability
+            logger.info(
+                f"Sync completed: {sent_count} emails sent, {skipped_count} skipped, "
+                f"{len(rows)} total rows processed, {len(errors)} errors"
+            )
+
             return {
                 "sent_count": sent_count,
                 "skipped_count": skipped_count,
@@ -221,7 +232,7 @@ class SyncService:
             logger.error(f"Error syncing applications: {e}", exc_info=True)
             raise
 
-    @log_function_call(logger)
+    @log_function_call(logger, level=logging.DEBUG)
     @log_execution_time(logger)
     def send_follow_ups(self, dry_run: bool = False) -> Dict[str, Any]:
         """
@@ -242,7 +253,7 @@ class SyncService:
             applications = self.tracker.get_applications_needing_follow_up()
 
             if not applications:
-                logger.info("No applications need follow-up at this time")
+                logger.info("Follow-up check: No applications need follow-up at this time")
                 return {
                     "sent_count": 0,
                     "skipped_count": 0,
@@ -250,7 +261,10 @@ class SyncService:
                     "message": "No applications need follow-up at this time",
                 }
 
-            logger.info(f"Found {len(applications)} applications needing follow-up")
+            logger.info(
+                f"Follow-up started: Found {len(applications)} applications needing follow-up, "
+                f"dry_run={dry_run}"
+            )
 
             sent_count = 0
             skipped_count = 0
@@ -259,7 +273,7 @@ class SyncService:
             for app in applications:
                 try:
                     if dry_run:
-                        logger.info(f"DRY RUN: Would send follow-up for " f"{app.company_name}")
+                        logger.debug(f"DRY RUN: Would send follow-up for " f"{app.company_name}")
                         sent_count += len(app.recruiters)
                     else:
                         result = self.email_service.send_follow_up(app.id, dry_run=False)
@@ -267,7 +281,8 @@ class SyncService:
                         if emails_sent > 0:
                             sent_count += emails_sent
                             logger.info(
-                                f"Follow-up sent ({emails_sent} email(s)) - " f"{app.company_name}"
+                                f"Follow-up sent: {emails_sent} email(s) for application "
+                                f"{app.id} - {app.company_name}"
                             )
                         else:
                             skipped_count += 1
@@ -285,6 +300,12 @@ class SyncService:
             message = f"Follow-ups completed: {sent_count} sent, " f"{skipped_count} skipped"
             if errors:
                 message += f", {len(errors)} errors"
+
+            # Log follow-up completion summary at INFO level for observability
+            logger.info(
+                f"Follow-up completed: {sent_count} emails sent, {skipped_count} skipped, "
+                f"{len(applications)} total needing follow-up, {len(errors)} errors"
+            )
 
             return {
                 "sent_count": sent_count,

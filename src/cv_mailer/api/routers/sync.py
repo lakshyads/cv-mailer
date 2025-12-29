@@ -54,13 +54,15 @@ async def sync_applications(
         result = sync_service.sync_applications(dry_run=dry_run)
         return result
     except (NotFoundError, ExternalServiceError) as e:
-        logger.warning(f"API: Service error syncing applications: {e}")
+        # Log at API layer (topmost handler) with appropriate level
+        logger.error(f"API: Service error syncing applications: {e}", exc_info=True)
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
     except Exception as e:
-        logger.error(f"Error syncing applications: {e}", exc_info=True)
+        # Log at API layer (topmost handler) with stack trace
+        logger.error(f"API: Unexpected error syncing applications: {e}", exc_info=True)
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
@@ -91,13 +93,15 @@ async def send_follow_ups(
         result = sync_service.send_follow_ups(dry_run=dry_run)
         return result
     except (NotFoundError, ExternalServiceError) as e:
-        logger.warning(f"API: Service error sending follow-ups: {e}")
+        # Log at API layer (topmost handler) with appropriate level
+        logger.error(f"API: Service error sending follow-ups: {e}", exc_info=True)
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
     except Exception as e:
-        logger.error(f"Error sending follow-ups: {e}", exc_info=True)
+        # Log at API layer (topmost handler) with stack trace
+        logger.error(f"API: Unexpected error sending follow-ups: {e}", exc_info=True)
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
