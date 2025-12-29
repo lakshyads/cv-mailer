@@ -6,11 +6,11 @@ import logging
 import pickle
 import os
 import httplib2
-from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_httplib2 import AuthorizedHttp
 
 from cv_mailer.config import Config
 from cv_mailer.utils.logging_utils import log_function_call
@@ -50,7 +50,8 @@ class SheetsAuthenticator:
                     try:
                         # Check if it's a service account JSON
                         creds = service_account.Credentials.from_service_account_file(
-                            Config.GOOGLE_CREDENTIALS_FILE, scopes=cls.SCOPES
+                            Config.GOOGLE_CREDENTIALS_FILE,
+                            scopes=cls.SCOPES,
                         )
                     except Exception:
                         # If not service account, use OAuth flow
@@ -65,14 +66,14 @@ class SheetsAuthenticator:
                         pickle.dump(creds, token)
 
         # Configure HTTP client with timeouts to prevent hanging
-        # The timeout ensures fast failure (30s) instead of hanging indefinitely
-        # Discovery document is cached by default, so it only downloads once
-        http = httplib2.Http(timeout=30)  # 30 second timeout
+        # The timeout ensures fast failure (30s) instead of hanging
+        # Authorize the HTTP client with credentials, then pass only http
+        http_client = httplib2.Http(timeout=30)  # 30 second timeout
+        authorized_http = AuthorizedHttp(creds, http=http_client)
         service = build(
             "sheets",
             "v4",
-            credentials=creds,
-            http=http,
+            http=authorized_http,
             # cache_discovery defaults to True, which caches the discovery doc
         )
         logger.info("Successfully authenticated with Google Sheets API")

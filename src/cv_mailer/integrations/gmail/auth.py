@@ -9,6 +9,7 @@ import httplib2
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from google_auth_httplib2 import AuthorizedHttp
 
 from cv_mailer.config import Config
 from cv_mailer.utils.logging_utils import log_function_call
@@ -54,13 +55,13 @@ class GmailAuthenticator:
 
         # Configure HTTP client with timeouts to prevent hanging
         # The timeout ensures fast failure (30s) instead of hanging
-        # Discovery document is cached by default, so it only downloads once
-        http = httplib2.Http(timeout=30)  # 30 second timeout
+        # Authorize the HTTP client with credentials, then pass only http
+        http_client = httplib2.Http(timeout=30)  # 30 second timeout
+        authorized_http = AuthorizedHttp(creds, http=http_client)
         service = build(
             "gmail",
             "v1",
-            credentials=creds,
-            http=http,
+            http=authorized_http,
             # cache_discovery defaults to True, which caches discovery doc
         )
         logger.info("Successfully authenticated with Gmail API")
