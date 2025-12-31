@@ -1,0 +1,59 @@
+---
+description: Logging and observability standards for production insight.
+alwaysApply: true
+---
+
+# Logging & Observability
+
+Logs exist to understand **production behavior**, not just to debug locally.
+
+## Plan Before Logging
+
+Before adding or changing logs:
+
+1. Identify workflows
+2. Identify state transitions
+3. Identify external dependencies
+4. Identify metrics that dashboards should show
+
+Only then implement logging changes.
+
+---
+
+## Required Coverage
+
+### External Services
+
+- Authentication success/failure
+- Token refresh
+- API failures, retries, latency
+
+### Core Workflows
+
+- Sync triggers
+- Sheets processed per run
+- Records read/updated
+- Emails sent
+- Follow-up execution counts
+
+### System Health
+
+- Startup configuration summary
+- Enabled features
+- Background job lifecycle
+- Degraded modes
+
+---
+
+## Log Levels (Strict)
+
+| Level | Purpose |
+| ---- | ---- |
+| INFO | High-level behavior, metrics |
+| WARN | Recoverable issues |
+| ERROR | Failed operations |
+| DEBUG | Detailed internals |
+
+Never log secrets, tokens, or PII.
+
+Prefer structured, aggregatable logs.

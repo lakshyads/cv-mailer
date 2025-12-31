@@ -1,0 +1,33 @@
+---
+description: Project memory, changelog, and roadmap discipline.
+alwaysApply: true
+---
+
+# Change Discipline
+
+## Changelog Is Mandatory
+
+Any change that:
+
+- Adds a feature
+- Changes behavior
+- Fixes a bug
+- Refactors architecture
+- Improves logging or observability
+
+MUST update `CHANGELOG.md`.
+
+Entries should clearly state:
+
+- What changed
+- Why it changed
+
+---
+
+## Roadmap Discipline
+
+- New ideas go ONLY into `design/FEATURE_SUGGESTIONS.md`
+- Never partially implement roadmap items silently
+- When implementing a roadmap item:
+  - Update its status
+  - Reference it in the changelog

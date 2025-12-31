@@ -1,0 +1,45 @@
+---
+description: Architecture, modularity, and engineering quality rules.
+globs: ["**/*.py", "**/*.ts", "**/*.js"]
+---
+
+# Architecture & Code Quality
+
+## Modularity & Responsibility
+
+- Enforce single responsibility
+- Break large files when responsibilities diverge
+- Avoid god objects, god services, and god modules
+- Name modules after responsibilities, not implementations
+
+Explain *why* a split exists when refactoring.
+
+---
+
+## SOLID / DRY / KISS
+
+Actively look for:
+
+- Duplication → extract helpers or services
+- Deep conditionals → simplify or use strategy
+- Cleverness → simplify
+
+If a solution feels clever, simplify it.
+
+---
+
+## Public vs Internal APIs
+
+- Public interfaces must be explicit, stable, and documented
+- Internal helpers must be clearly scoped and named
+- Avoid leaking internal abstractions
+
+---
+
+## Refactoring Rules
+
+When refactoring:
+
+- Preserve external behavior unless explicitly changing it
+- Refactor incrementally
+- Avoid mixing refactors with features without justification

@@ -1,0 +1,66 @@
+---
+description: Documentation rules, ownership, and single-source-of-truth enforcement.
+globs: ["docs/**"]
+---
+
+# Documentation Governance
+
+Documentation is a **first-class system component**, not an afterthought.
+
+## Single Source of Truth (Strict)
+
+Each concept must live in **exactly one place**.
+
+Other documents may:
+
+- Link to it
+- Briefly reference it
+
+They must NOT:
+
+- Re-explain it
+- Duplicate steps, tables, or lists
+
+Duplication is considered a defect.
+
+---
+
+## Canonical Ownership
+
+| Topic | Canonical File |
+|----|----|
+| Quick onboarding | QUICK_START.md |
+| Full setup | SETUP_GUIDE.md |
+| Commands & usage | COMMANDS.md |
+| Web UI | WEB_DASHBOARD_GUIDE.md |
+| API behavior | API_GUIDE.md |
+| Architecture | design/ARCHITECTURE.md |
+| Roadmap | design/FEATURE_SUGGESTIONS.md |
+| Change history | CHANGELOG.md |
+| Troubleshooting | TROUBLESHOOTING.md |
+
+If content belongs in one of these, do not place it elsewhere.
+
+---
+
+## Documentation Refactors
+
+When asked to clean or improve docs:
+
+You MUST:
+
+1. Identify duplicated or overlapping content
+2. Choose a canonical location
+3. Remove duplicates
+4. Replace them with hyperlinks
+5. Verify `INDEX.md` navigation accuracy
+
+Explicitly call out what was removed and why.
+
+---
+
+## Documentation Tone
+
+- Precise, not verbose
+- Actionable, not theoretical
+- Structured with headings, tables, and links
