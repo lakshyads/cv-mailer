@@ -55,6 +55,8 @@ class Config:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FILE: str = os.getenv("LOG_FILE", "logs/cv_mailer.log")
     VERBOSE_LOGGING: bool = os.getenv("VERBOSE_LOGGING", "false").lower() == "true"
+    LOG_RETENTION_DAYS: int = int(os.getenv("LOG_RETENTION_DAYS", "60"))
+    LOG_COMPRESS: bool = os.getenv("LOG_COMPRESS", "true").lower() == "true"
 
     @classmethod
     def validate(cls) -> list[str]:

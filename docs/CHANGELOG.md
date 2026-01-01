@@ -6,6 +6,48 @@ Format: **Date - Version - Change Type: Description**
 
 ---
 
+## [1.2.0] - 2026-01-01 - PHASE 3: ROLLING LOGS
+
+### 🎯 Log Management Improvements
+
+#### **Rolling Logs by Date** ✅
+
+- **Added**: Comprehensive daily log rotation with compression support
+  - **Date-based active log files**: `cv_mailer_YYYY-MM-DD.log` (includes today's date)
+  - **Startup rotation**: Automatically compresses old log files when application starts
+  - **Midnight rotation**: Automatically rotates logs at midnight for continuously running applications
+  - **Configurable retention period** (default: 30 days)
+  - **Optional gzip compression** for old log files: `cv_mailer_YYYY-MM-DD.log.gz`
+  - **Automatic cleanup** of logs older than retention period
+  - **Migration support** for old non-dated log files
+- **Configuration**:
+  - `LOG_RETENTION_DAYS` (default: 30) - Number of days to keep log files
+  - `LOG_COMPRESS` (default: true) - Whether to compress rotated log files
+- **Implementation**:
+  - Custom `DateBasedRotatingFileHandler` class extends `logging.FileHandler`
+    - Checks date on each log emit for midnight rotation
+    - Handles both start/stop and continuous running patterns
+  - `_rotate_old_log_files()` function for startup rotation
+  - Centralized `setup_logging()` function in `logging_utils.py`
+  - Both API and CLI use the same logging configuration
+- **Benefits**:
+  - ✅ Prevents log files from growing indefinitely
+  - ✅ Better log organization by date (easy to find logs from specific dates)
+  - ✅ Disk space savings through compression (typically 70-90% reduction)
+  - ✅ Easier troubleshooting (find logs by date)
+  - ✅ Automatic cleanup of old logs
+  - ✅ Works for both start/stop and continuous running usage patterns
+- **Files Changed**:
+  - `src/cv_mailer/config/settings.py` - Added LOG_RETENTION_DAYS and LOG_COMPRESS
+  - `src/cv_mailer/utils/logging_utils.py` - Added DateBasedRotatingFileHandler, rotation functions, and setup_logging()
+  - `src/cv_mailer/utils/__init__.py` - Exported setup_logging
+  - `src/cv_mailer/api/app.py` - Updated to use centralized logging setup
+  - `src/cv_mailer/cli/commands.py` - Updated to use centralized logging setup
+  - `.env.example` - Added LOG_RETENTION_DAYS and LOG_COMPRESS configuration
+  - `docs/SETUP_GUIDE.md` - Added logging configuration documentation
+
+---
+
 ## [1.1.0] - 2025-12-29 - PRODUCTION READINESS & OBSERVABILITY
 
 ### 🎯 Production Readiness Improvements

@@ -12,8 +12,6 @@ API routers are thin controllers that call service methods.
 """
 
 import logging
-import sys
-from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -21,31 +19,14 @@ import uvicorn
 from cv_mailer import __version__
 from cv_mailer.api.routers import applications, emails, recruiters, stats, sync
 from cv_mailer.utils import init_database, close_database
-from cv_mailer.config import Config
+from cv_mailer.utils.logging_utils import setup_logging
 
-
-# Setup logging
-def setup_logging():
-    """Setup logging configuration for API."""
-    log_file = Path(Config.LOG_FILE)
-    log_file.parent.mkdir(parents=True, exist_ok=True)
-
-    logging.basicConfig(
-        level=getattr(logging, Config.LOG_LEVEL),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler(Config.LOG_FILE),
-            logging.StreamHandler(sys.stdout),
-        ],
-    )
-
-
+# Setup logging with rotation support
 setup_logging()
 logger = logging.getLogger(__name__)
 
 # Initialize database (infrastructure setup - not business logic)
 init_database()
-logger.info(f"Database initialized: {Config.DATABASE_PATH}")
 
 # Create FastAPI app
 app = FastAPI(

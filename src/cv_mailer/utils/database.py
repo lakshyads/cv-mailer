@@ -56,6 +56,7 @@ def init_database():
     """Initialize database tables."""
     engine = get_engine()
     Base.metadata.create_all(engine)
+    logger.info(f"Database initialized: {Config.DATABASE_PATH}")
 
 
 def checkpoint_wal():

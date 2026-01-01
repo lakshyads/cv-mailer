@@ -4,22 +4,12 @@ CLI command handlers.
 
 import argparse
 import logging
-import sys
 
 from cv_mailer.cli.app import CVMailer
 from cv_mailer.cli.display import console, show_banner
-from cv_mailer.config import Config
+from cv_mailer.utils.logging_utils import setup_logging
 
 logger = logging.getLogger(__name__)
-
-
-def setup_logging():
-    """Setup logging configuration."""
-    logging.basicConfig(
-        level=getattr(logging, Config.LOG_LEVEL),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[logging.FileHandler(Config.LOG_FILE), logging.StreamHandler(sys.stdout)],
-    )
 
 
 def main():

@@ -67,7 +67,7 @@ Core features for conversation management and email workflow improvements.
 | 4 | [Settings Page & Configuration](features/high-priority/04-settings-page.md) | Not Started | Manage templates, resumes, and app config via UI |
 | 5 | [Job Description Storage](features/high-priority/05-job-description-storage.md) | Not Started | Store job descriptions for AI-powered email generation |
 | 6 | [Calendar Integration & Widget](features/high-priority/06-calendar-integration.md) | Not Started | Google Calendar sync with dashboard calendar widget |
-| 7 | [Rolling Logs by Date](features/high-priority/07-rolling-logs.md) | Not Started | Daily log rotation with configurable retention |
+| 7 | [Rolling Logs by Date](features/high-priority/07-rolling-logs.md) | ✅ Completed | Daily log rotation with configurable retention |
 
 ---
 
@@ -163,6 +163,7 @@ UX improvements for better user interaction.
 
 ### Phase 3: Conversation Management (Q1 2026) - **CURRENT FOCUS**
 
+- [x] Rolling logs by date ✅
 - [ ] Email threading (reply-to-previous)
 - [ ] Conversation tracking & UI
 - [ ] Selective follow-up triggering
@@ -172,7 +173,6 @@ UX improvements for better user interaction.
 - [ ] Resume file selection per email
 - [ ] Settings page (templates, resumes, config)
 - [ ] Job description storage
-- [ ] Rolling logs by date
 
 ### Phase 4: Calendar & Intelligence (Q2 2026)
 

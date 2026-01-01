@@ -20,7 +20,11 @@ from cv_mailer.utils.exceptions import (
 )
 from cv_mailer.utils.query_builder import QueryBuilder
 from cv_mailer.utils.validators import validate_email
-from cv_mailer.utils.logging_utils import log_function_call, log_execution_time
+from cv_mailer.utils.logging_utils import (
+    log_function_call,
+    log_execution_time,
+    setup_logging,
+)
 from cv_mailer.utils.sheet_parser import get_row_value, extract_application_data
 from cv_mailer.utils.transaction import transaction, safe_commit
 from cv_mailer.utils.validation import (
@@ -56,6 +60,7 @@ __all__ = [
     # Logging
     "log_function_call",
     "log_execution_time",
+    "setup_logging",
     # Sheet parsing
     "get_row_value",
     "extract_application_data",

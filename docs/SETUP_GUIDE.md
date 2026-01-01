@@ -127,6 +127,10 @@ MAX_FOLLOW_UPS=3        # Max follow-ups per application
 DATABASE_PATH=data/cv_mailer.db
 LOG_FILE=logs/cv_mailer.log
 LOG_LEVEL=INFO
+
+# Log Rotation (optional)
+LOG_RETENTION_DAYS=30    # Number of days to keep log files
+LOG_COMPRESS=true         # Compress rotated log files (saves disk space)
 ```
 
 ### Getting Spreadsheet ID
