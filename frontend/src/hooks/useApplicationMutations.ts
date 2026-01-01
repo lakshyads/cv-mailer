@@ -18,6 +18,7 @@ export function useApplicationMutations() {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
       queryClient.invalidateQueries({ queryKey: ['application', idString] });
       queryClient.invalidateQueries({ queryKey: ['application', idString, 'emails'] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString, 'conversations'] });
       queryClient.invalidateQueries({ queryKey: ['application', idString, 'timeline'] });
       toast.success(data.message || 'Reach-out email sent successfully');
     },
@@ -27,13 +28,15 @@ export function useApplicationMutations() {
   });
 
   const triggerFollowUp = useMutation({
-    mutationFn: (id: number) => applicationsApi.triggerFollowUp(id),
-    onSuccess: (data, id) => {
+    mutationFn: ({ id, recruiterIds }: { id: number; recruiterIds?: number[] }) =>
+      applicationsApi.triggerFollowUp(id, undefined, recruiterIds),
+    onSuccess: (data, variables) => {
       // Convert id to string to match query key format from useParams
-      const idString = String(id);
+      const idString = String(variables.id);
       queryClient.invalidateQueries({ queryKey: ['applications'] });
       queryClient.invalidateQueries({ queryKey: ['application', idString] });
       queryClient.invalidateQueries({ queryKey: ['application', idString, 'emails'] });
+      queryClient.invalidateQueries({ queryKey: ['application', idString, 'conversations'] });
       queryClient.invalidateQueries({ queryKey: ['application', idString, 'timeline'] });
       toast.success(data.message || 'Follow-up email sent successfully');
     },

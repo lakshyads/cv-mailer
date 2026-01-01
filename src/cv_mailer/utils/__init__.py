@@ -34,6 +34,12 @@ from cv_mailer.utils.validation import (
     validate_limit_offset,
     validate_application_id,
 )
+from cv_mailer.utils.email_utils import (
+    extract_message_id_from_payload,
+    format_message_id_for_header,
+    build_references_chain,
+    clean_subject_for_reply,
+)
 
 __all__ = [
     # Database
@@ -73,4 +79,9 @@ __all__ = [
     "validate_string_not_empty",
     "validate_limit_offset",
     "validate_application_id",
+    # Email utilities
+    "extract_message_id_from_payload",
+    "format_message_id_for_header",
+    "build_references_chain",
+    "clean_subject_for_reply",
 ]

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Application, Recruiter, EmailRecord, Statistics, PaginatedResponse, TimelineEvent } from '@/types';
+import type { Application, Recruiter, EmailRecord, Statistics, PaginatedResponse, TimelineEvent, ConversationListResponse, ConversationThread } from '@/types';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -103,11 +103,47 @@ export const applicationsApi = {
     return data;
   },
 
-  triggerFollowUp: async (id: number, recruiterId?: number) => {
+  triggerFollowUp: async (id: number, recruiterId?: number, recruiterIds?: number[]) => {
+    const params: Record<string, number | number[]> = {};
+    if (recruiterIds && recruiterIds.length > 0) {
+      // Use new recruiter_ids array
+      params.recruiter_ids = recruiterIds;
+    } else if (recruiterId) {
+      // Fallback to single recruiter_id for backward compatibility
+      params.recruiter_id = recruiterId;
+    }
+    
     const { data } = await api.post<{ message: string; sent_count: number; failed_count: number }>(
       `/applications/${id}/trigger-follow-up`,
       null,
-      { params: recruiterId ? { recruiter_id: recruiterId } : {} }
+      { 
+        params,
+        paramsSerializer: (params) => {
+          const parts: string[] = [];
+          for (const [key, value] of Object.entries(params)) {
+            if (Array.isArray(value)) {
+              value.forEach(v => parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(v)}`));
+            } else if (value !== undefined && value !== null) {
+              parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+            }
+          }
+          return parts.join('&');
+        }
+      }
+    );
+    return data;
+  },
+
+  getConversations: async (id: number) => {
+    const { data } = await api.get<ConversationListResponse>(
+      `/applications/${id}/conversations`
+    );
+    return data;
+  },
+
+  getRecruiterConversation: async (id: number, recruiterId: number) => {
+    const { data } = await api.get<ConversationThread>(
+      `/applications/${id}/conversations/${recruiterId}`
     );
     return data;
   },

@@ -61,7 +61,7 @@ Core features for conversation management and email workflow improvements.
 
 | # | Feature | Status | Description |
 |---|---------|--------|-------------|
-| 1 | [Email Conversation Threading & Management](features/high-priority/01-email-conversation-threading.md) | Not Started | Reply-to-previous threading, conversation tracking, selective follow-ups |
+| 1 | [Email Conversation Threading & Management](features/high-priority/01-email-conversation-threading.md) | ✅ **Completed** | Reply-to-previous threading, conversation tracking, selective follow-ups |
 | 2 | [Email Response Parsing & Analysis](features/high-priority/02-email-response-parsing.md) | Not Started | Auto-detect responses, NLP analysis, action items generation |
 | 3 | [Email Editing & Customization](features/high-priority/03-email-editing-customization.md) | Not Started | Edit subject/content, resume selection before sending |
 | 4 | [Settings Page & Configuration](features/high-priority/04-settings-page.md) | Not Started | Manage templates, resumes, and app config via UI |

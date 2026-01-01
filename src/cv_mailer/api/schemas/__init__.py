@@ -9,7 +9,12 @@ from cv_mailer.api.schemas.application import (
     UpdateStatusRequest,
     EmailActionResponse,
 )
-from cv_mailer.api.schemas.email import EmailResponse, EmailDetailResponse
+from cv_mailer.api.schemas.email import (
+    EmailResponse,
+    EmailDetailResponse,
+    ConversationThread,
+    ConversationListResponse,
+)
 from cv_mailer.api.schemas.recruiter import RecruiterResponse, RecruiterDetailResponse
 from cv_mailer.api.schemas.common import PaginatedResponse, TimelineEvent
 
@@ -23,6 +28,8 @@ __all__ = [
     # Email
     "EmailResponse",
     "EmailDetailResponse",
+    "ConversationThread",
+    "ConversationListResponse",
     # Recruiter
     "RecruiterResponse",
     "RecruiterDetailResponse",

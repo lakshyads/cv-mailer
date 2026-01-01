@@ -6,6 +6,117 @@ Format: **Date - Version - Change Type: Description**
 
 ---
 
+## [1.3.0] - 2026-01-01 - EMAIL CONVERSATION THREADING & MANAGEMENT
+
+### 🎯 Email Threading & Conversation Management
+
+#### **Complete Email Threading Implementation** ✅
+
+- **Gmail API Scopes**: Added `gmail.modify` scope to enable reading messages and retrieving actual Message-ID headers
+- **Message-ID Handling**:
+  - Generate Message-ID headers when creating emails
+  - Fetch ACTUAL Message-ID from Gmail after sending (Gmail may rewrite it)
+  - Store actual Message-ID in database for threading
+- **Threading Headers**:
+  - `In-Reply-To`: Points to immediate parent email's Message-ID
+  - `References`: Contains full conversation chain (all previous Message-IDs)
+  - `threadId`: Included in Gmail API request body
+- **Subject Line Matching**: Follow-ups use "Re: " prefix with exact original subject matching
+- **Database Schema**:
+  - Added `email_message_id` column to store actual Message-ID header
+  - Added `thread_id`, `in_reply_to`, and `references` columns for threading
+  - Automatic migration on startup
+- **Per-Recruiter Follow-up Counting**: Each recruiter gets independent sequential follow-up numbers (1, 2, 3...)
+- **Max Follow-ups Handling**:
+  - Per-recruiter max follow-up checks
+  - Gracefully skips exhausted recruiters when sending to all
+  - Returns error only if ALL requested recruiters are exhausted
+
+#### **Conversation Management UI** ✅
+
+- **Conversations View**:
+  - Group emails by recruiter into conversation threads
+  - Display message count, last activity, and threading indicators
+  - Clickable conversation headers to view full thread
+- **Conversation Detail Modal**:
+  - View complete email thread with all messages
+  - See email body, threading indicators, and metadata
+  - Send follow-ups from conversation view
+- **Selective Follow-ups**:
+  - Send follow-ups to specific recruiters or all recruiters
+  - Recruiter selection dialog for multi-recruiter applications
+  - Per-conversation follow-up buttons
+- **UI Improvements**:
+  - Message count displayed as badge icon (less cluttered)
+  - Proper button state management (only active conversation buttons disabled)
+  - Threading indicators in email list
+
+#### **API Endpoints** ✅
+
+- `GET /applications/{id}/conversations`: Get all conversations grouped by recruiter
+- `GET /applications/{id}/conversations/{recruiter_id}`: Get specific recruiter's conversation
+- `POST /applications/{id}/trigger-follow-up`: Enhanced with `recruiter_ids` parameter for selective follow-ups
+
+#### **Code Quality Improvements** ✅
+
+- **DRY Principle**:
+  - Extracted Message-ID extraction logic to shared utility (`email_utils.py`)
+  - Extracted References chain building to utility function
+  - Extracted subject cleaning logic to utility function
+- **Service Layer Architecture**:
+  - Moved conversation grouping logic from API router to `EmailService`
+  - API routers now only handle request/response conversion
+  - Business logic properly encapsulated in services
+- **Type Safety**:
+  - Proper type hints throughout
+  - Fixed type annotation issues
+- **Documentation**:
+  - Created comprehensive `email-threading-design.md` documentation
+  - Updated CHANGELOG with feature details
+
+#### **Files Changed**
+
+**Backend**:
+
+- `src/cv_mailer/core/models.py` - Added threading fields to EmailRecord
+- `src/cv_mailer/integrations/gmail/auth.py` - Added `gmail.modify` scope
+- `src/cv_mailer/integrations/gmail/client.py` - Message-ID fetching, threading headers
+- `src/cv_mailer/services/email_service.py` - Threading logic, conversation grouping
+- `src/cv_mailer/services/tracker.py` - Per-recruiter follow-up counting, validation
+- `src/cv_mailer/services/template_service.py` - Simplified follow-up template (no full HTML)
+- `src/cv_mailer/api/routers/applications.py` - Conversation endpoints, simplified routers
+- `src/cv_mailer/api/schemas/email.py` - Conversation schemas
+- `src/cv_mailer/utils/migrations.py` - Migration for threading fields
+- `src/cv_mailer/utils/email_utils.py` - NEW: Shared email utility functions
+
+**Frontend**:
+
+- `frontend/src/components/organisms/application/ConversationsCard.tsx` - NEW: Conversations list
+- `frontend/src/components/organisms/application/ConversationView.tsx` - NEW: Single conversation view
+- `frontend/src/components/organisms/application/ConversationDetailModal.tsx` - NEW: Full conversation modal
+- `frontend/src/components/organisms/application/RecruiterSelectionDialog.tsx` - NEW: Recruiter selection
+- `frontend/src/components/organisms/application/ApplicationActionsCard.tsx` - Updated for selective follow-ups
+- `frontend/src/pages/ApplicationDetailPage.tsx` - Integrated conversations view
+- `frontend/src/api/client.ts` - Added conversation API methods
+- `frontend/src/hooks/useApplicationMutations.ts` - Updated for selective follow-ups
+- `frontend/src/types/index.ts` - Added conversation types
+
+**Documentation**:
+
+- `docs/design/email-threading-design.md` - NEW: Complete threading design documentation
+
+#### **Benefits**
+
+- ✅ Follow-up emails properly thread in Gmail (appear as replies, not standalone)
+- ✅ Complete conversation history viewable in UI
+- ✅ Per-recruiter follow-up tracking and counting
+- ✅ Selective follow-up sending (specific recruiters or all)
+- ✅ Better code organization (DRY, service layer architecture)
+- ✅ Production-ready threading implementation
+- ✅ Future-proof for reading incoming replies
+
+---
+
 ## [1.2.0] - 2026-01-01 - PHASE 3: ROLLING LOGS
 
 ### 🎯 Log Management Improvements

@@ -75,37 +75,29 @@ class EmailTemplateService:
     FOLLOW_UP_SUBJECT = "Following up: {{ position }} - {{ company_name }}"
 
     FOLLOW_UP_TEMPLATE = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <p>Hi {{ recruiter_name or 'Hiring Manager' }},</p>
-                
-                <p>
-                    I wanted to follow up on my application for the 
-                    <strong>{{ position }}</strong> position at <strong>{{ company_name }}</strong>
-                    {% if location %} ({{ location }}){% endif %}.  
-                    I remain very interested in the opportunity 
-                    and would welcome any updates you can share.
-                </p>
-                
-                <p>
-                    Please let me know if there's anything else you need from me. 
-                    Looking forward to your response.
-                </p>
-                
-                <p>
-                    Best regards,<br>
-                    {{ sender_name }}<br>
-                    {% if linkedin_profile %}{{ linkedin_profile }}<br>{% endif %}
-                    {% if contact_information %}{{ contact_information }}{% endif %}
-                </p>
-            </div>
-        </body>
-        </html>
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <p>Hi {{ recruiter_name or 'Hiring Manager' }},</p>
+            
+            <p>
+                I wanted to follow up on my application for the 
+                <strong>{{ position }}</strong> position at <strong>{{ company_name }}</strong>
+                {% if location %} ({{ location }}){% endif %}.  
+                I remain very interested in the opportunity 
+                and would welcome any updates you can share.
+            </p>
+            
+            <p>
+                Please let me know if there's anything else you need from me. 
+                Looking forward to your response.
+            </p>
+            
+            <p>
+                Best regards,<br>
+                {{ sender_name }}<br>
+                {% if linkedin_profile %}{{ linkedin_profile }}<br>{% endif %}
+                {% if contact_information %}{{ contact_information }}{% endif %}
+            </p>
+        </div>
     """
 
     @classmethod

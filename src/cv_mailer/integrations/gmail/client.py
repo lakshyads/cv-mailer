@@ -11,9 +11,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
+from email.utils import make_msgid
 from pathlib import Path
-from typing import Optional
-from datetime import datetime, timedelta, timezone
+from typing import Optional, Dict, Any
+from datetime import datetime, timezone
 from googleapiclient.errors import HttpError
 from sqlalchemy.exc import OperationalError
 
@@ -21,6 +22,7 @@ from cv_mailer.config import Config
 from cv_mailer.core import DailyEmailStats
 from cv_mailer.utils import get_session, ExternalServiceError
 from cv_mailer.utils.logging_utils import log_function_call, log_execution_time
+from cv_mailer.utils.email_utils import extract_message_id_from_payload
 from cv_mailer.integrations.gmail.auth import GmailAuthenticator
 
 logger = logging.getLogger(__name__)
@@ -169,8 +171,16 @@ class GmailSender:
         body: str,
         resume_path: Optional[str] = None,
         resume_drive_link: Optional[str] = None,
+        thread_id: Optional[str] = None,
+        in_reply_to: Optional[str] = None,
+        references: Optional[str] = None,
     ) -> dict:
         """Create email message with optional resume attachment."""
+        # Validate body is not empty
+        if not body or len(body.strip()) == 0:
+            logger.error("Email body is empty! Cannot send email without content.")
+            raise ValueError("Email body cannot be empty")
+
         body_with_link = body
         if resume_drive_link and resume_drive_link not in body_with_link:
             drive_link_html = (
@@ -188,11 +198,90 @@ class GmailSender:
                 body_with_link = body_with_link + drive_link_html
             logger.info("Added resume drive link to email")
 
-        message = MIMEMultipart()
+        # Create multipart message (always "mixed" since we may have attachments)
+        message = MIMEMultipart("mixed")
         message["to"] = to
         message["from"] = f"{Config.SENDER_NAME} <{Config.GMAIL_USER}>"
         message["subject"] = subject
-        message.attach(MIMEText(body_with_link, "html"))
+
+        # Generate Message-ID header (required for email threading)
+        # Python's email library will auto-generate one if not set, but we want control
+        # Format: <unique-id@domain> - Gmail will accept this format
+        if not message.get("Message-ID"):
+            # Generate a Message-ID in the standard format
+            # Use domain from sender email or a default
+            domain = Config.GMAIL_USER.split("@")[1] if "@" in Config.GMAIL_USER else "gmail.com"
+            message_id = make_msgid(domain=domain)
+            message["Message-ID"] = message_id
+            logger.debug(f"Generated Message-ID header: {message_id}")
+
+        # Add threading headers for replies (required for Gmail threading)
+        # The in_reply_to should be the Message-ID header from the previous email
+        # Message-ID headers from Gmail are already in format: <message-id@domain>
+        if in_reply_to:
+            # In-Reply-To should be in angle brackets format: <message-id>
+            # Message-ID headers from Gmail are already formatted, but ensure format
+            in_reply_to_formatted = (
+                in_reply_to if in_reply_to.startswith("<") else f"<{in_reply_to}>"
+            )
+            message["In-Reply-To"] = in_reply_to_formatted
+            logger.info(f"Setting In-Reply-To header: {in_reply_to_formatted}")
+        if references:
+            # References should be space-separated message IDs in angle brackets
+            # Format: <msg-id-1> <msg-id-2> <msg-id-3>
+            refs_list = references.split() if isinstance(references, str) else references
+            formatted_refs = []
+            for ref in refs_list:
+                # Remove angle brackets if present, then add them
+                # This ensures consistent formatting
+                clean_ref = ref.strip("<>").strip()
+                if clean_ref:
+                    formatted_refs.append(f"<{clean_ref}>")
+            if formatted_refs:
+                message["References"] = " ".join(formatted_refs)
+                logger.info(f"Setting References header: {message['References']}")
+
+        # Attach email body as HTML
+        # CRITICAL: For replies, use simpler HTML structure to avoid Gmail collapsing content
+        # Gmail collapses content that looks like quoted/previous messages
+        if not body_with_link or len(body_with_link.strip()) == 0:
+            logger.error("Email body (with link) is empty after processing!")
+            raise ValueError("Email body cannot be empty after processing")
+
+        # For replies (when in_reply_to is set), wrap body in minimal HTML structure
+        # This helps Gmail recognize it as new content, not quoted content
+        if in_reply_to:
+            # If body doesn't already have HTML wrapper, add minimal one
+            # But keep it simple - no DOCTYPE, html, head tags
+            if not body_with_link.strip().startswith("<"):
+                # Plain text - wrap in div
+                body_with_link = f'<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">{body_with_link}</div>'
+            elif "<!DOCTYPE" in body_with_link or "<html>" in body_with_link.lower():
+                # Full HTML document - extract just the body content
+                # This prevents Gmail from thinking it's quoted content
+                import re
+
+                # Try to extract content between <body> tags, or just use as-is if extraction fails
+                body_match = re.search(
+                    r"<body[^>]*>(.*?)</body>", body_with_link, re.DOTALL | re.IGNORECASE
+                )
+                if body_match:
+                    body_with_link = body_match.group(1).strip()
+                    logger.debug("Extracted body content from full HTML document for reply")
+
+        # Log body info for debugging
+        body_preview = body_with_link[:200] if len(body_with_link) > 200 else body_with_link
+        logger.info(
+            f"Attaching email body: length={len(body_with_link)} chars, "
+            f"is_reply={bool(in_reply_to)}, "
+            f"preview: {body_preview[:100]}..."
+        )
+
+        # Attach body as HTML text part with explicit charset
+        # This ensures Gmail properly displays the content
+        body_part = MIMEText(body_with_link, "html", "utf-8")
+        body_part.set_charset("utf-8")
+        message.attach(body_part)
 
         # Add resume attachment if available
         if resume_path and Path(resume_path).exists():
@@ -212,8 +301,16 @@ class GmailSender:
             message.attach(part)
             logger.info(f"Attached resume file: {resume_path}")
 
+        # Extract Message-ID from the message before encoding
+        # This is the Message-ID header we'll use for threading
+        email_message_id = message.get("Message-ID", "")
+
         raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
-        return {"raw": raw_message}
+        return {
+            "raw": raw_message,
+            "thread_id": thread_id,
+            "email_message_id": email_message_id,
+        }
 
     @log_function_call(logger)
     @log_execution_time(logger)
@@ -224,7 +321,10 @@ class GmailSender:
         body: str,
         resume_path: Optional[str] = None,
         resume_drive_link: Optional[str] = None,
-    ) -> Optional[str]:
+        thread_id: Optional[str] = None,
+        in_reply_to: Optional[str] = None,
+        references: Optional[str] = None,
+    ) -> Optional[Dict[str, str]]:
         """
         Send an email via Gmail.
 
@@ -234,9 +334,12 @@ class GmailSender:
             body: Email body (HTML)
             resume_path: Path to resume file to attach
             resume_drive_link: Google Drive link to resume
+            thread_id: Gmail thread ID to add email to existing thread
+            in_reply_to: Message ID of parent email (for threading)
+            references: References header chain (for threading)
 
         Returns:
-            Gmail message ID if successful, None otherwise
+            Dictionary with "message_id" and "thread_id" if successful, None otherwise
         """
         # Check daily email limits
         if not self._check_rate_limit():
@@ -250,24 +353,100 @@ class GmailSender:
                 time.sleep(delay)
 
             # Create message
-            message = self._create_message(
+            message_dict = self._create_message(
                 to=to,
                 subject=subject,
                 body=body,
                 resume_path=resume_path or Config.RESUME_FILE_PATH,
                 resume_drive_link=resume_drive_link or Config.RESUME_DRIVE_LINK,
+                thread_id=thread_id,
+                in_reply_to=in_reply_to,
+                references=references,
             )
 
-            # Send message
-            sent_message = self.service.users().messages().send(userId="me", body=message).execute()
+            # Extract Message-ID from the message dict (set in _create_message)
+            email_message_id_from_message = message_dict.get("email_message_id", "")
+
+            # Send message with optional thread_id
+            # Gmail API: threadId should be in the request body
+            request_body: Dict[str, Any] = {"raw": message_dict["raw"]}
+            # Use thread_id from message dict if available, otherwise use parameter
+            if message_dict.get("thread_id"):
+                request_body["threadId"] = str(message_dict["thread_id"])
+            elif thread_id:
+                request_body["threadId"] = str(thread_id)
+
+            sent_message = (
+                self.service.users().messages().send(userId="me", body=request_body).execute()
+            )
 
             message_id = sent_message.get("id")
-            logger.info(f"Email sent successfully to {to}. Message ID: {message_id}")
+            response_thread_id = sent_message.get("threadId")
+
+            # CRITICAL: Fetch the ACTUAL Message-ID that Gmail used/assigned
+            # Gmail may rewrite our Message-ID header, so we MUST fetch it back
+            # This is the only way to get the real Message-ID for threading
+            email_message_id_header = None
+            if message_id:
+                try:
+                    # Small delay to ensure Gmail has processed the message
+                    time.sleep(0.5)
+
+                    # Fetch the full message to get the actual headers Gmail used
+                    full_message = (
+                        self.service.users()
+                        .messages()
+                        .get(userId="me", id=message_id, format="full")
+                        .execute()
+                    )
+
+                    # Extract Message-ID from headers (recursively for multipart)
+                    email_message_id_header = extract_message_id_from_payload(
+                        full_message.get("payload", {})
+                    )
+
+                    if email_message_id_header:
+                        logger.info(
+                            f"Retrieved ACTUAL Message-ID from Gmail: {email_message_id_header} "
+                            f"(Gmail message ID: {message_id})"
+                        )
+                    else:
+                        logger.warning(
+                            f"Message-ID header not found in Gmail message {message_id}. "
+                            f"Using generated Message-ID as fallback."
+                        )
+                        email_message_id_header = email_message_id_from_message
+                except Exception as e:
+                    logger.error(
+                        f"Failed to fetch Message-ID from Gmail for message {message_id}: {e}. "
+                        f"Using generated Message-ID as fallback. "
+                        f"Threading may not work correctly.",
+                        exc_info=True,
+                    )
+                    # Fallback to generated Message-ID if we can't fetch it
+                    email_message_id_header = email_message_id_from_message
+            else:
+                # No message ID returned - use generated one
+                email_message_id_header = email_message_id_from_message
+
+            logger.info(
+                f"Email sent successfully to {to}. "
+                f"Gmail Message ID: {message_id}, "
+                f"Thread ID: {response_thread_id}, "
+                f"Email Message-ID: {email_message_id_header}"
+            )
 
             # Update rate limit stats
             self._update_rate_limit_stats()
 
-            return message_id
+            result: Dict[str, Any] = {
+                "message_id": str(message_id) if message_id else "",
+            }
+            if response_thread_id:
+                result["thread_id"] = str(response_thread_id)
+            if email_message_id_header:
+                result["email_message_id"] = email_message_id_header
+            return result
 
         except HttpError as error:
             logger.error(f"Error sending email: {error}")

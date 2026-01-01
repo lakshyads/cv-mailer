@@ -9,6 +9,11 @@ Complete guide to the CV Mailer REST API built with FastAPI.
 - [Overview](#overview)
 - [Getting Started](#getting-started)
 - [API Endpoints](#api-endpoints)
+  - [Applications](#applications)
+  - [Conversations](#conversations)
+  - [Emails](#emails)
+  - [Recruiters](#recruiters)
+  - [Statistics](#statistics)
 - [Authentication](#authentication)
 - [Request/Response Format](#requestresponse-format)
 - [Error Handling](#error-handling)
@@ -20,9 +25,10 @@ Complete guide to the CV Mailer REST API built with FastAPI.
 The CV Mailer API provides RESTful endpoints for:
 
 - Managing job applications
-- Viewing email records
+- Viewing email records and conversations
 - Managing recruiter contacts
 - Accessing statistics and analytics
+- Triggering email actions (reach-out, follow-ups)
 
 **Base URL**: `http://localhost:8000`  
 **API Version**: v1  
@@ -206,6 +212,99 @@ Update the status of a job application.
 - `rejected` - Rejected
 - `accepted` - Offer accepted
 
+#### Trigger Reach-out
+
+**POST** `/api/v1/applications/{application_id}/trigger-reach-out`
+
+Send first contact emails to all recruiters for an application.
+
+**Path Parameters**:
+- `application_id`: ID of the application
+
+**Example Request**:
+```bash
+curl -X POST http://localhost:8000/api/v1/applications/1/trigger-reach-out
+```
+
+**Response**:
+```json
+{
+  "message": "Reach-out triggered: 2 sent, 0 failed",
+  "sent_count": 2,
+  "failed_count": 0
+}
+```
+
+#### Trigger Follow-up
+
+**POST** `/api/v1/applications/{application_id}/trigger-follow-up`
+
+Send follow-up emails for an application. Supports selective follow-ups to specific recruiters.
+
+**Path Parameters**:
+- `application_id`: ID of the application
+
+**Query Parameters**:
+- `recruiter_ids` (optional): List of recruiter IDs to send follow-ups to. If not provided, sends to all recruiters who haven't exhausted their follow-ups.
+
+**Example Request**:
+```bash
+# Send to all recruiters
+curl -X POST http://localhost:8000/api/v1/applications/1/trigger-follow-up
+
+# Send to specific recruiters
+curl -X POST "http://localhost:8000/api/v1/applications/1/trigger-follow-up?recruiter_ids=1&recruiter_ids=2"
+```
+
+**Response**:
+```json
+{
+  "message": "Follow-up triggered: 1 sent, 0 failed",
+  "sent_count": 1,
+  "failed_count": 0
+}
+```
+
+**Notes**:
+- Only sends follow-ups to recruiters who haven't exhausted their max follow-ups
+- Returns error (400) only if ALL requested recruiters have exhausted their follow-ups
+- Respects `FOLLOW_UP_DAYS` configuration (timing check)
+
+#### Get Application Timeline
+
+**GET** `/api/v1/applications/{application_id}/timeline`
+
+Get timeline of events for an application (status changes, emails sent, etc.).
+
+**Path Parameters**:
+- `application_id`: ID of the application
+
+**Example Request**:
+```bash
+curl http://localhost:8000/api/v1/applications/1/timeline
+```
+
+**Response**:
+```json
+{
+  "application_id": 1,
+  "events": [
+    {
+      "type": "email_sent",
+      "description": "First contact email sent to Alice Johnson",
+      "timestamp": "2026-01-01T19:00:00Z",
+      "icon": "envelope"
+    },
+    {
+      "type": "status_changed",
+      "description": "Application status updated to Reached Out",
+      "timestamp": "2026-01-01T19:00:05Z",
+      "icon": "check-circle"
+    }
+  ]
+}
+```
+
 ### Emails
 
 #### Get Application Emails
@@ -213,6 +312,78 @@ Update the status of a job application.
 **GET** `/api/v1/applications/{application_id}/emails`
 
 Get all emails sent for a specific job application.
+
+#### Get Application Conversations
+
+**GET** `/api/v1/applications/{application_id}/conversations`
+
+Get all email conversations for an application, grouped by recruiter. Each conversation represents a threaded email exchange with a specific recruiter.
+
+**Path Parameters**:
+- `application_id`: ID of the application
+
+**Example Request**:
+```bash
+curl http://localhost:8000/api/v1/applications/1/conversations
+```
+
+**Response**:
+```json
+{
+  "application_id": 1,
+  "total_conversations": 2,
+  "conversations": [
+    {
+      "thread_id": "19b79b757dff208f",
+      "recipient_email": "alice@presight.ai",
+      "recipient_name": "Alice Johnson",
+      "recipient_id": 1,
+      "message_count": 3,
+      "last_activity": "2026-01-01T19:30:00Z",
+      "emails": [
+        {
+          "id": 1,
+          "email_type": "first_contact",
+          "subject": "Application: Software Engineer - Presight",
+          "status": "sent",
+          "thread_id": "19b79b757dff208f",
+          "sent_at": "2026-01-01T19:00:00Z",
+          "body": "..."
+        },
+        {
+          "id": 2,
+          "email_type": "follow_up",
+          "subject": "Re: Application: Software Engineer - Presight",
+          "status": "sent",
+          "thread_id": "19b79b757dff208f",
+          "in_reply_to": "<msg-id-1@mail.gmail.com>",
+          "is_follow_up": true,
+          "follow_up_number": 1,
+          "sent_at": "2026-01-01T19:15:00Z",
+          "body": "..."
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Get Recruiter Conversation
+
+**GET** `/api/v1/applications/{application_id}/conversations/{recruiter_id}`
+
+Get the complete conversation thread for a specific recruiter in an application.
+
+**Path Parameters**:
+- `application_id`: ID of the application
+- `recruiter_id`: ID of the recruiter
+
+**Example Request**:
+```bash
+curl http://localhost:8000/api/v1/applications/1/conversations/1
+```
+
+**Response**: Same format as individual conversation in the conversations list above.
 
 **Path Parameters**:
 

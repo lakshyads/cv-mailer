@@ -9,18 +9,21 @@ import { ProgressTracker } from '@/components/organisms/shared/ProgressTracker';
 import { Timeline } from '@/components/organisms/application/Timeline';
 import { ApplicationHeader } from '@/components/organisms/application/ApplicationHeader';
 import { ApplicationDetailsCard } from '@/components/organisms/application/ApplicationDetailsCard';
-import { EmailHistoryCard } from '@/components/organisms/application/EmailHistoryCard';
+import { ConversationsCard } from '@/components/organisms/application/ConversationsCard';
 import { RecruitersCard } from '@/components/organisms/application/RecruitersCard';
 import { ApplicationActionsCard } from '@/components/organisms/application/ApplicationActionsCard';
 import { EmailViewerModal } from '@/components/organisms/application/EmailViewerModal';
+import { ConversationDetailModal } from '@/components/organisms/application/ConversationDetailModal';
 import { toast } from 'sonner';
-import type { EmailRecord } from '@/types';
+import type { EmailRecord, ConversationThread } from '@/types';
 
 export default function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [viewingEmail, setViewingEmail] = useState<EmailRecord | null>(null);
+  const [viewingConversation, setViewingConversation] = useState<ConversationThread | null>(null);
+  const [sendingFollowUpForRecruiters, setSendingFollowUpForRecruiters] = useState<Set<number>>(new Set());
 
   const { data: application, isLoading } = useQuery({
     queryKey: ['application', id],
@@ -28,9 +31,9 @@ export default function ApplicationDetailPage() {
     enabled: !!id,
   });
 
-  const { data: emailsData } = useQuery({
-    queryKey: ['application', id, 'emails'],
-    queryFn: () => applicationsApi.getEmails(Number(id)),
+  const { data: conversationsData, isLoading: isLoadingConversations } = useQuery({
+    queryKey: ['application', id, 'conversations'],
+    queryFn: () => applicationsApi.getConversations(Number(id)),
     enabled: !!id,
   });
 
@@ -48,9 +51,21 @@ export default function ApplicationDetailPage() {
     }
   };
 
-  const handleTriggerFollowUp = () => {
+  const handleTriggerFollowUp = (recruiterIds?: number[]) => {
     if (id) {
-      triggerFollowUp.mutate(Number(id));
+      // Track which recruiters are being sent to
+      const recruiterSet = new Set(recruiterIds || []);
+      setSendingFollowUpForRecruiters(recruiterSet);
+      
+      triggerFollowUp.mutate(
+        { id: Number(id), recruiterIds },
+        {
+          onSettled: () => {
+            // Clear the sending state after mutation completes
+            setSendingFollowUpForRecruiters(new Set());
+          },
+        }
+      );
     }
   };
 
@@ -71,7 +86,7 @@ export default function ApplicationDetailPage() {
     return <LoadingScreen />;
   }
 
-  const emails = emailsData?.emails || [];
+  const conversations = conversationsData?.conversations || [];
 
   return (
     <div className="space-y-6">
@@ -103,11 +118,13 @@ export default function ApplicationDetailPage() {
               </CardContent>
             </Card>
 
-            <EmailHistoryCard
-              emails={emails}
+            <ConversationsCard
+              conversations={conversations}
               onViewEmail={setViewingEmail}
-              onTriggerReachOut={handleTriggerReachOut}
-              isTriggerReachOutPending={triggerReachOut.isPending}
+              onViewConversation={setViewingConversation}
+              onSendFollowUp={handleTriggerFollowUp}
+              sendingFollowUpForRecruiters={sendingFollowUpForRecruiters}
+              isLoading={isLoadingConversations}
             />
           </div>
         </div>
@@ -133,6 +150,17 @@ export default function ApplicationDetailPage() {
       </div>
 
       <EmailViewerModal email={viewingEmail} onClose={() => setViewingEmail(null)} />
+      <ConversationDetailModal
+        conversation={viewingConversation}
+        isOpen={!!viewingConversation}
+        onClose={() => setViewingConversation(null)}
+        onViewEmail={setViewingEmail}
+        onSendFollowUp={handleTriggerFollowUp}
+        isSendingFollowUp={
+          viewingConversation?.recipient_id !== undefined &&
+          sendingFollowUpForRecruiters.has(viewingConversation.recipient_id)
+        }
+      />
     </div>
   );
 }

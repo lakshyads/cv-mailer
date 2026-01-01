@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/Card';
 import { Button } from '@/components/atoms/ui/Button';
 import { Spinner } from '@/components/atoms/ui/Spinner';
 import { Send, Mail } from 'lucide-react';
 import { getValidNextStatuses } from '@/lib/statusTransitions';
+import { RecruiterSelectionDialog } from './RecruiterSelectionDialog';
 import type { Application, JobStatus } from '@/types';
 
 interface ApplicationActionsCardProps {
@@ -12,7 +14,7 @@ interface ApplicationActionsCardProps {
   onStatusChange: (status: string) => void;
   onNotesChange: (notes: string) => void;
   onTriggerReachOut: () => void;
-  onTriggerFollowUp: () => void;
+  onTriggerFollowUp: (recruiterIds?: number[]) => void;
   onUpdateStatus: () => void;
   isTriggerReachOutPending: boolean;
   isTriggerFollowUpPending: boolean;
@@ -36,7 +38,27 @@ export function ApplicationActionsCard({
   isTriggerFollowUpPending,
   isUpdateStatusPending,
 }: ApplicationActionsCardProps) {
+  const [showRecruiterDialog, setShowRecruiterDialog] = useState(false);
   const validNextStatuses = getValidNextStatuses(application.status);
+  const hasMultipleRecruiters = application.recruiters && application.recruiters.length > 1;
+
+  const handleTriggerFollowUpClick = () => {
+    if (hasMultipleRecruiters) {
+      setShowRecruiterDialog(true);
+    } else {
+      // Single recruiter or no recruiters - send to all
+      onTriggerFollowUp();
+    }
+  };
+
+  const handleRecruiterSelection = (recruiterIds: number[]) => {
+    if (recruiterIds.length === 0) {
+      // Send to all if none selected
+      onTriggerFollowUp();
+    } else {
+      onTriggerFollowUp(recruiterIds);
+    }
+  };
 
   return (
     <Card>
@@ -64,7 +86,7 @@ export function ApplicationActionsCard({
         </Button>
 
         <Button
-          onClick={onTriggerFollowUp}
+          onClick={handleTriggerFollowUpClick}
           disabled={isTriggerFollowUpPending}
           className="w-full"
           variant="outline"
@@ -78,9 +100,23 @@ export function ApplicationActionsCard({
             <>
               <Mail className="h-4 w-4 mr-2" />
               Send Follow-up
+              {hasMultipleRecruiters && (
+                <span className="ml-1 text-xs opacity-75">(Select)</span>
+              )}
             </>
           )}
         </Button>
+
+        {showRecruiterDialog && application.recruiters && (
+          <RecruiterSelectionDialog
+            recruiters={application.recruiters}
+            isOpen={showRecruiterDialog}
+            onClose={() => setShowRecruiterDialog(false)}
+            onConfirm={handleRecruiterSelection}
+            title="Select Recruiters for Follow-up"
+            confirmLabel="Send Follow-up"
+          />
+        )}
 
         <div className="border-t pt-4">
           <label className="text-sm font-medium">Update Status</label>

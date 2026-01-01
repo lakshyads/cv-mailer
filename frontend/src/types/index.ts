@@ -13,10 +13,8 @@ export type JobStatus =
   | 'offer_rejected';
 
 export type EmailType = 
-  | 'cold_email'
-  | 'follow_up'
-  | 'thank_you'
-  | 'other';
+  | 'first_contact'
+  | 'follow_up';
 
 export type EmailStatus = 
   | 'draft'
@@ -63,8 +61,26 @@ export interface EmailRecord {
   status: EmailStatus;
   is_follow_up: boolean;
   follow_up_number: number;
+  thread_id?: string;
+  in_reply_to?: string;
   sent_at?: string;
   created_at?: string;
+}
+
+export interface ConversationThread {
+  thread_id?: string;
+  recipient_email: string;
+  recipient_name?: string;
+  recipient_id?: number;
+  emails: EmailRecord[];
+  message_count: number;
+  last_activity?: string;
+}
+
+export interface ConversationListResponse {
+  application_id: number;
+  conversations: ConversationThread[];
+  total_conversations: number;
 }
 
 export interface TimelineEvent {

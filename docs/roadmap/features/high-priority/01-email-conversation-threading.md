@@ -1,9 +1,9 @@
 # Email Conversation Threading & Management
 
 **Priority**: High  
-**Status**: Not Started  
+**Status**: ✅ **COMPLETED** (2026-01-01)  
 **Phase**: Phase 3 - Conversation Management (Q1 2026)  
-**Estimated Timeline**: Q1 2026
+**Implementation**: See [Email Threading Design](../../../design/email-threading-design.md) for complete implementation details
 
 ---
 
@@ -12,6 +12,7 @@
 Maintain proper email conversation threads for each recruiter. Follow-ups should be replies to previous emails, creating a cohesive conversation trail. This feature enables complete conversation tracking and a better user experience for managing email communications with recruiters.
 
 **Key Goals**:
+
 - Follow-up emails are replies to the original or previous email in the thread
 - Complete conversation history viewable per recruiter per application
 - Selective follow-up triggering for specific recruiters
@@ -34,11 +35,13 @@ Maintain proper email conversation threads for each recruiter. Follow-ups should
 ### Email Threading (Reply-to-Previous)
 
 #### Current State
+
 - Follow-up emails are sent as standalone emails
 - No thread linking between emails
 - No conversation context maintained
 
 #### Target State
+
 - Follow-up emails are replies to the original or previous email in the thread
 - Proper Gmail thread linking maintained
 - Full conversation context preserved
@@ -95,11 +98,13 @@ Maintain proper email conversation threads for each recruiter. Follow-ups should
 ### Selective Follow-up Triggering
 
 #### Current State
+
 - `EmailService.send_follow_up()` already supports `recruiter_id` parameter
 - UI doesn't expose this capability
 - Follow-ups are triggered for all recruiters at once
 
 #### Target State
+
 - UI allows selecting specific recruiters for follow-up
 - Per-recruiter follow-up buttons
 - Bulk selection option available
@@ -188,4 +193,3 @@ Maintain proper email conversation threads for each recruiter. Follow-ups should
 ---
 
 **Last Updated**: January 2026
-

@@ -20,7 +20,15 @@ logger = logging.getLogger(__name__)
 class GmailAuthenticator:
     """Handle Gmail API authentication."""
 
-    SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+    # Gmail API scopes:
+    # - gmail.send: Send emails
+    # - gmail.modify: Read, modify, and manage emails (includes send)
+    # We need modify scope to read messages and get actual Message-ID headers
+    # This is required for proper email threading and future reply syncing
+    SCOPES = [
+        "https://www.googleapis.com/auth/gmail.send",
+        "https://www.googleapis.com/auth/gmail.modify",
+    ]
     TOKEN_FILE = "gmail_token.pickle"
 
     @classmethod

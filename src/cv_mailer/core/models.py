@@ -129,6 +129,7 @@ class EmailRecord(Base):
         Index("ix_email_status", "status"),
         Index("ix_email_sent_at", "sent_at"),
         Index("ix_email_recipient", "recipient_email"),
+        Index("ix_email_thread_id", "thread_id"),  # For conversation queries
     )
 
     id = Column(Integer, primary_key=True)
@@ -144,11 +145,17 @@ class EmailRecord(Base):
     # Status
     status = Column(SQLEnum(EmailStatus), default=EmailStatus.PENDING)
     gmail_message_id = Column(String(255))  # Gmail message ID for tracking
+    email_message_id = Column(String(255))  # Email Message-ID header (for threading)
     error_message = Column(Text)
 
     # Follow-up tracking
     is_follow_up = Column(Boolean, default=False)
     follow_up_number = Column(Integer, default=0)  # 0 = first contact, 1+ = follow-up number
+
+    # Email threading (for conversation management)
+    thread_id = Column(String(255))  # Gmail thread ID
+    in_reply_to = Column(String(255))  # Message ID of parent email
+    references = Column(Text)  # References header chain for threading
 
     # Timestamps (all stored as UTC in database)
     # Use lambda to ensure datetime is evaluated at creation time, not module load time

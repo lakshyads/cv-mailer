@@ -7,6 +7,7 @@ All business logic is in ApplicationService.
 
 import logging
 from typing import Optional, List
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from cv_mailer.services import ApplicationService, EmailService
@@ -20,6 +21,12 @@ from cv_mailer.api.schemas import (
     EmailActionResponse,
     PaginatedResponse,
     TimelineEvent,
+)
+from cv_mailer.api.schemas.email import (
+    ConversationListResponse,
+    ConversationThread,
+    EmailResponse,
+    EmailDetailResponse,
 )
 from cv_mailer.utils.date import parse_iso_datetime_optional
 from cv_mailer.utils.exceptions import (
@@ -202,17 +209,21 @@ async def trigger_reach_out(
 @router.post("/applications/{application_id}/trigger-follow-up", response_model=EmailActionResponse)
 async def trigger_follow_up(
     application_id: int,
-    recruiter_id: Optional[int] = Query(None, description="Optional recruiter ID"),
+    recruiter_id: Optional[int] = Query(
+        None, description="Optional recruiter ID (deprecated, use recruiter_ids)"
+    ),
+    recruiter_ids: Optional[List[int]] = Query(None, description="Optional list of recruiter IDs"),
     email_service: EmailService = Depends(get_email_service),
 ):
     """
     Trigger follow-up email for an application.
     Respects FOLLOW_UP_DAYS configuration.
+    Supports selective follow-ups by specifying recruiter_ids.
     """
     try:
         logger.info(f"API: Triggering follow-up for application {application_id}")
 
-        result = email_service.send_follow_up(application_id, recruiter_id)
+        result = email_service.send_follow_up(application_id, recruiter_id, recruiter_ids)
 
         message = (
             f"Follow-up triggered: {result['sent_count']} sent, {result['failed_count']} failed"
@@ -253,4 +264,104 @@ async def get_application_timeline(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"API: Error getting timeline: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/applications/{application_id}/conversations", response_model=ConversationListResponse)
+async def get_application_conversations(
+    application_id: int,
+    email_service: EmailService = Depends(get_email_service),
+):
+    """Get all email conversations for an application, grouped by recruiter."""
+    try:
+        logger.info(f"API: Fetching conversations for application {application_id}")
+
+        # Get conversations from service layer (business logic)
+        conversation_data = email_service.get_conversations_for_application(application_id)
+
+        # Convert to response models
+        conversations = [
+            ConversationThread(
+                thread_id=conv["thread_id"],
+                recipient_email=conv["recipient_email"],
+                recipient_name=conv["recipient_name"],
+                recipient_id=conv["recipient_id"],
+                emails=[EmailDetailResponse.from_orm(e) for e in conv["emails"]],
+                message_count=conv["message_count"],
+                last_activity=conv["last_activity"],
+            )
+            for conv in conversation_data
+        ]
+
+        return ConversationListResponse(
+            application_id=application_id,
+            conversations=conversations,
+            total_conversations=len(conversations),
+        )
+    except NotFoundError as e:
+        logger.warning(f"API: Invalid request for conversations: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"API: Error getting conversations: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get(
+    "/applications/{application_id}/conversations/{recruiter_id}", response_model=ConversationThread
+)
+async def get_recruiter_conversation(
+    application_id: int,
+    recruiter_id: int,
+    service: ApplicationService = Depends(get_application_service),
+    email_service: EmailService = Depends(get_email_service),
+):
+    """Get email conversation thread for a specific recruiter."""
+    try:
+        logger.info(
+            f"API: Fetching conversation for application {application_id}, recruiter {recruiter_id}"
+        )
+
+        # Get application to verify it exists and find recruiter
+        app = service.get_application(application_id)
+
+        recruiter = None
+        for r in app.recruiters:
+            if r.id == recruiter_id:
+                recruiter = r
+                break
+
+        if not recruiter:
+            raise NotFoundError(
+                f"Recruiter {recruiter_id} not found for application {application_id}"
+            )
+
+        # Get all emails for this application and recruiter
+        all_emails = email_service.get_emails_for_application(application_id)
+        emails = [e for e in all_emails if e.recipient_email == recruiter.email]
+
+        # Sort emails chronologically (oldest first for conversation flow)
+        emails.sort(key=lambda e: e.sent_at or e.created_at or datetime.min)
+
+        # Get thread_id and last activity
+        thread_id = None
+        last_activity = None
+        if emails:
+            thread_id = emails[0].thread_id
+            last_email = emails[-1]
+            last_activity = last_email.sent_at or last_email.created_at
+
+        return ConversationThread(
+            thread_id=thread_id,
+            recipient_email=recruiter.email,
+            recipient_name=recruiter.name,
+            recipient_id=recruiter.id,
+            emails=[EmailDetailResponse.from_orm(e) for e in emails],
+            message_count=len(emails),
+            last_activity=last_activity,
+        )
+    except NotFoundError as e:
+        logger.warning(f"API: Invalid request for recruiter conversation: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"API: Error getting recruiter conversation: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")

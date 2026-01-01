@@ -2,7 +2,7 @@
 Email-related schemas.
 """
 
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -21,6 +21,8 @@ class EmailResponse(BaseModel):
     status: EmailStatus
     is_follow_up: bool = False
     follow_up_number: int = 0
+    thread_id: Optional[str] = None
+    in_reply_to: Optional[str] = None
     sent_at: Optional[datetime] = None
     created_at: datetime
 
@@ -32,3 +34,26 @@ class EmailDetailResponse(EmailResponse):
     """Detailed email response including body."""
 
     body: str
+
+
+class ConversationThread(BaseModel):
+    """Email conversation thread response."""
+
+    thread_id: Optional[str] = None
+    recipient_email: str
+    recipient_name: Optional[str] = None
+    recipient_id: Optional[int] = None
+    emails: List[EmailDetailResponse] = []  # Use EmailDetailResponse to include body
+    message_count: int = 0
+    last_activity: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ConversationListResponse(BaseModel):
+    """List of conversations for an application."""
+
+    application_id: int
+    conversations: List[ConversationThread] = []
+    total_conversations: int = 0

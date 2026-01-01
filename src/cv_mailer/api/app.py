@@ -20,6 +20,7 @@ from cv_mailer import __version__
 from cv_mailer.api.routers import applications, emails, recruiters, stats, sync
 from cv_mailer.utils import init_database, close_database
 from cv_mailer.utils.logging_utils import setup_logging
+from cv_mailer.utils.migrations import run_migrations
 
 # Setup logging with rotation support
 setup_logging()
@@ -27,6 +28,9 @@ logger = logging.getLogger(__name__)
 
 # Initialize database (infrastructure setup - not business logic)
 init_database()
+
+# Run database migrations
+run_migrations()
 
 # Create FastAPI app
 app = FastAPI(

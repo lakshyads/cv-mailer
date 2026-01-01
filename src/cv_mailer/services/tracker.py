@@ -141,6 +141,10 @@ class ApplicationTracker:
         recipient_email: str,
         recipient_name: Optional[str] = None,
         gmail_message_id: Optional[str] = None,
+        email_message_id: Optional[str] = None,
+        thread_id: Optional[str] = None,
+        in_reply_to: Optional[str] = None,
+        references: Optional[str] = None,
         is_follow_up: bool = False,
         follow_up_number: int = 0,
     ) -> EmailRecord:
@@ -158,6 +162,10 @@ class ApplicationTracker:
             recipient_name=recipient_name,
             status=EmailStatus.SENT if gmail_message_id else EmailStatus.PENDING,
             gmail_message_id=gmail_message_id,
+            email_message_id=email_message_id,
+            thread_id=thread_id,
+            in_reply_to=in_reply_to,
+            references=references,
             is_follow_up=is_follow_up,
             follow_up_number=follow_up_number,
             sent_at=datetime.now(timezone.utc) if gmail_message_id else None,
@@ -258,15 +266,19 @@ class ApplicationTracker:
         return needing_follow_up
 
     @log_function_call(logger)
-    def can_send_follow_up(self, job_application_id: int) -> Tuple[bool, str]:
+    def can_send_follow_up(
+        self, job_application_id: int, check_max_follow_ups: bool = True
+    ) -> Tuple[bool, str]:
         """
-        Check if an application can receive a follow-up email.
+        Check if a follow-up email can be sent for a job application.
 
         Args:
-            job_application_id: Job application ID
+            job_application_id: The job application ID
+            check_max_follow_ups: If True, check max follow-ups globally (legacy behavior).
+                                 If False, skip max check (should be checked per-recruiter).
 
         Returns:
-            Tuple of (can_send: bool, reason: str)
+            Tuple of (can_send, reason)
         """
         app = self.session.query(JobApplication).get(job_application_id)
         if not app:
@@ -290,7 +302,7 @@ class ApplicationTracker:
         if not last_email or not last_email.sent_at:
             return False, "No emails have been sent for this application yet"
 
-        # Check if enough time has passed
+        # Check if enough time has passed (check most recent email across all recruiters)
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=Config.FOLLOW_UP_DAYS)
         sent_at = last_email.sent_at
         if sent_at.tzinfo is None:
@@ -304,18 +316,64 @@ class ApplicationTracker:
                 f"Not enough time has passed. Last email sent {days_since} days ago, need {days_needed} days",
             )
 
-        # Check if we've reached max follow-ups
+        # Check if we've reached max follow-ups (only if requested)
+        # NOTE: This is a global check. For per-recruiter checks, use can_send_follow_up_for_recruiter
+        if check_max_follow_ups:
+            last_follow_up_number = (
+                self.session.query(func.max(EmailRecord.follow_up_number))
+                .filter_by(
+                    job_application_id=job_application_id,
+                    is_follow_up=True,
+                    status=EmailStatus.SENT,
+                )
+                .scalar()
+                or 0
+            )
+
+            if last_follow_up_number >= Config.MAX_FOLLOW_UPS:
+                return False, f"Maximum follow-ups ({Config.MAX_FOLLOW_UPS}) already sent"
+
+        return True, "OK"
+
+    @log_function_call(logger)
+    def can_send_follow_up_for_recruiter(
+        self, job_application_id: int, recipient_email: str
+    ) -> Tuple[bool, str]:
+        """
+        Check if a follow-up email can be sent for a specific recruiter.
+
+        This performs per-recruiter checks including max follow-ups.
+
+        Args:
+            job_application_id: The job application ID
+            recipient_email: The recruiter's email address
+
+        Returns:
+            Tuple of (can_send, reason)
+        """
+        # Check basic application-level requirements (status, timing)
+        can_send, reason = self.can_send_follow_up(job_application_id, check_max_follow_ups=False)
+        if not can_send:
+            return can_send, reason
+
+        # Check per-recruiter max follow-ups
         last_follow_up_number = (
             self.session.query(func.max(EmailRecord.follow_up_number))
             .filter_by(
-                job_application_id=job_application_id, is_follow_up=True, status=EmailStatus.SENT
+                job_application_id=job_application_id,
+                recipient_email=recipient_email,
+                is_follow_up=True,
+                status=EmailStatus.SENT,
             )
             .scalar()
             or 0
         )
 
         if last_follow_up_number >= Config.MAX_FOLLOW_UPS:
-            return False, f"Maximum follow-ups ({Config.MAX_FOLLOW_UPS}) already sent"
+            return (
+                False,
+                f"Maximum follow-ups ({Config.MAX_FOLLOW_UPS}) already sent to {recipient_email}",
+            )
 
         return True, "OK"
 
@@ -329,6 +387,37 @@ class ApplicationTracker:
             self.session.query(func.max(EmailRecord.follow_up_number))
             .filter_by(
                 job_application_id=job_application_id, is_follow_up=True, status=EmailStatus.SENT
+            )
+            .scalar()
+            or 0
+        )
+
+        return int(last_follow_up_number) + 1
+
+    @log_function_call(logger)
+    def get_next_follow_up_number_for_recruiter(
+        self, job_application_id: int, recipient_email: str
+    ) -> int:
+        """
+        Get the next follow-up number for a specific recruiter.
+        
+        This ensures each recruiter gets sequential follow-up numbers (1, 2, 3...)
+        regardless of when other recruiters received their follow-ups.
+        
+        Args:
+            job_application_id: The job application ID
+            recipient_email: The recruiter's email address
+            
+        Returns:
+            The next follow-up number for this recruiter
+        """
+        last_follow_up_number = (
+            self.session.query(func.max(EmailRecord.follow_up_number))
+            .filter_by(
+                job_application_id=job_application_id,
+                recipient_email=recipient_email,
+                is_follow_up=True,
+                status=EmailStatus.SENT,
             )
             .scalar()
             or 0

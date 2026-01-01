@@ -36,6 +36,12 @@
   - Code organization
   - Data flow examples
   - Production readiness
+- **[Email Threading Design](design/email-threading-design.md)** 📧 - Complete email threading implementation design
+  - Gmail API threading requirements
+  - Message-ID handling
+  - Threading headers (In-Reply-To, References)
+  - Implementation details
+  - Troubleshooting guide
 - **[Logging Strategy](LOGGING_STRATEGY.md)** 📊 - Logging guidelines and production observability
 - **[Changelog](CHANGELOG.md)** 📝 - All changes, features, and improvements
 - **[Roadmap](roadmap/ROADMAP.md)** 🎯 - Planned features
@@ -66,6 +72,7 @@ docs/
 ├── CHANGELOG.md                      # 📝 All changes
 ├── LOGGING_STRATEGY.md               # 📊 Logging guidelines
 ├── design/
+│   ├── email-threading-design.md     # Design for email threading
 │   └── ARCHITECTURE.md               # 🏗️ System architecture
 ├── roadmap/                          # 🎯 Feature roadmap
 │   ├── ROADMAP.md                    # Main roadmap (concise overview)
