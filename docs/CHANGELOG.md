@@ -242,7 +242,7 @@ Format: **Date - Version - Change Type: Description**
 6. `GOOGLE_SHEETS_TEMPLATE.md` - Sheet format
 7. `WEB_DASHBOARD_GUIDE.md` - Web UI guide
 8. `design/ARCHITECTURE.md` - Architecture overview
-9. `design/FEATURE_SUGGESTIONS.md` - Roadmap
+9. `roadmap/ROADMAP.md` - Roadmap (with detailed feature specs in `roadmap/features/`)
 
 ---
 
@@ -408,7 +408,7 @@ cv-mailer/
 
 ## 🔮 Planned Features
 
-See [FEATURE_SUGGESTIONS.md](design/FEATURE_SUGGESTIONS.md) for the roadmap.
+See [ROADMAP.md](roadmap/ROADMAP.md) for the roadmap.
 
 ### High Priority
 

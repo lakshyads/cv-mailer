@@ -26,8 +26,8 @@ Entries should clearly state:
 
 ## Roadmap Discipline
 
-- New ideas go ONLY into `design/FEATURE_SUGGESTIONS.md`
+- New ideas go ONLY into `roadmap/ROADMAP.md` and/or appropriate feature spec in `roadmap/features/`
 - Never partially implement roadmap items silently
 - When implementing a roadmap item:
-  - Update its status
+  - Update its status in the roadmap and/or feature spec
   - Reference it in the changelog

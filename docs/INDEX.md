@@ -36,8 +36,9 @@
   - Code organization
   - Data flow examples
   - Production readiness
+- **[Logging Strategy](LOGGING_STRATEGY.md)** 📊 - Logging guidelines and production observability
 - **[Changelog](CHANGELOG.md)** 📝 - All changes, features, and improvements
-- **[Roadmap](design/FEATURE_SUGGESTIONS.md)** 🎯 - Planned features
+- **[Roadmap](roadmap/ROADMAP.md)** 🎯 - Planned features
 
 ---
 
@@ -63,9 +64,19 @@ docs/
 ├── GOOGLE_SHEETS_TEMPLATE.md         # 📊 Sheet format
 ├── EMAIL_TEMPLATE_SAMPLES.md         # 📝 Email templates
 ├── CHANGELOG.md                      # 📝 All changes
+├── LOGGING_STRATEGY.md               # 📊 Logging guidelines
 ├── design/
-│   ├── ARCHITECTURE.md               # 🏗️ System architecture
-│   └── FEATURE_SUGGESTIONS.md        # 🎯 Roadmap
+│   └── ARCHITECTURE.md               # 🏗️ System architecture
+├── roadmap/                          # 🎯 Feature roadmap
+│   ├── ROADMAP.md                    # Main roadmap (concise overview)
+│   ├── CONTRIBUTING.md               # Contributing guide
+│   └── features/                     # Detailed feature specs
+│       ├── high-priority/            # High priority features
+│       ├── medium-priority/          # Medium priority features
+│       ├── nice-to-have/             # Nice-to-have features
+│       ├── technical-improvements/   # Technical improvements
+│       ├── security/                 # Security enhancements
+│       └── ux-enhancements/          # UX enhancements
 └── fix_enhancements/
     ├── OAUTH_FIX.md                  # 🔐 OAuth troubleshooting
     └── UPGRADE_PYTHON.md             # 🐍 Python upgrade guide
@@ -85,7 +96,7 @@ docs/
 | Web dashboard | [Web Dashboard Guide](WEB_DASHBOARD_GUIDE.md) |
 | Architecture details | [Architecture Guide](design/ARCHITECTURE.md) |
 | Recent changes | [Changelog](CHANGELOG.md) |
-| Planned features | [Roadmap](design/FEATURE_SUGGESTIONS.md) |
+| Planned features | [Roadmap](roadmap/ROADMAP.md) |
 
 ---
 

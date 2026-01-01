@@ -330,7 +330,7 @@ pytest            # Test
 - **[Google Sheets Template](GOOGLE_SHEETS_TEMPLATE.md)** - Sheet format reference
 - **[API Guide](API_GUIDE.md)** - Complete API documentation
 - **[Architecture](design/ARCHITECTURE.md)** - System design
-- **[Feature Roadmap](design/FEATURE_SUGGESTIONS.md)** - Future enhancements
+- **[Feature Roadmap](roadmap/ROADMAP.md)** - Future enhancements
 
 ---
 

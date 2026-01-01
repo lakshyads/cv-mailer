@@ -26,7 +26,7 @@ See [Changelog](docs/CHANGELOG.md) for complete feature list and recent improvem
 - 🚀 **REST API** - FastAPI-based API with OpenAPI docs
 - ⚡ **Production-Ready** - Enterprise-grade architecture and code quality
 
-**For complete feature details:** See [Changelog](docs/CHANGELOG.md) | [Roadmap](docs/design/FEATURE_SUGGESTIONS.md)
+**For complete feature details:** See [Changelog](docs/CHANGELOG.md) | [Roadmap](docs/roadmap/ROADMAP.md)
 
 ## 📚 Documentation
 
@@ -40,7 +40,7 @@ See [Changelog](docs/CHANGELOG.md) for complete feature list and recent improvem
 - **[API Guide](docs/API_GUIDE.md)** 🚀 - REST API documentation
 - **[Changelog](docs/CHANGELOG.md)** 📝 - What's new and changed
 - **[Architecture](docs/design/ARCHITECTURE.md)** 🏗️ - System design
-- **[Roadmap](docs/design/FEATURE_SUGGESTIONS.md)** 🎯 - Planned features
+- **[Roadmap](docs/roadmap/ROADMAP.md)** 🎯 - Planned features
 
 ## 🏗️ Architecture
 

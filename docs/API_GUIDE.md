@@ -940,7 +940,7 @@ See [Changelog](CHANGELOG.md) for complete version history and all changes.
 
 ## Future Enhancements
 
-See [Feature Roadmap](design/FEATURE_SUGGESTIONS.md) for planned features and enhancements.
+See [Feature Roadmap](roadmap/ROADMAP.md) for planned features and enhancements.
 
 ## Support
 

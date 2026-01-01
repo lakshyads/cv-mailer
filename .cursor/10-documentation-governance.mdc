@@ -28,14 +28,14 @@ Duplication is considered a defect.
 ## Canonical Ownership
 
 | Topic | Canonical File |
-|----|----|
+| ---- | ---- |
 | Quick onboarding | QUICK_START.md |
 | Full setup | SETUP_GUIDE.md |
 | Commands & usage | COMMANDS.md |
 | Web UI | WEB_DASHBOARD_GUIDE.md |
 | API behavior | API_GUIDE.md |
 | Architecture | design/ARCHITECTURE.md |
-| Roadmap | design/FEATURE_SUGGESTIONS.md |
+| Roadmap | roadmap/ROADMAP.md |
 | Change history | CHANGELOG.md |
 | Troubleshooting | TROUBLESHOOTING.md |
 
@@ -54,6 +54,7 @@ You MUST:
 3. Remove duplicates
 4. Replace them with hyperlinks
 5. Verify `INDEX.md` navigation accuracy
+6. Identify redundant docs and docs that are no longer applicable or needed
 
 Explicitly call out what was removed and why.
 
